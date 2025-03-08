@@ -142,11 +142,35 @@
       <!-- 移除打开悬浮框的链接 -->
     </ul>
     <!-- 新增按钮 -->
-    <button onclick="window.location.href='blog1.html'">题解：P3843 [TJOI2007] 迷路</button>
   </div>
   <footer>
     &copy; 2025 朱嘉奇 版权所有
   </footer>
+  <!-- 新增 JavaScript 代码 -->
+  <script>
+    // 获取博客列表的 ul 元素
+    const blogList = document.getElementById('blog-list');
+
+    // 手动列出 blogs 文件夹中的 HTML 文件
+    const blogFiles = [
+      // 这里列出你 blogs 文件夹中的所有 HTML 文件
+      '题解：P3843 [TJOI2007] 迷路.html'
+      // 可以继续添加更多文件
+    ];
+
+    // 遍历文件列表，为每个文件创建超链接
+    blogFiles.forEach((file) => {
+      if (file.endsWith('.html')) {
+        // 创建列表项和链接
+        const li = document.createElement('li');
+        const a = document.createElement('a');
+        a.href = `blogs/${file}`;
+        a.textContent = file.replace('.html', '');
+        li.appendChild(a);
+        blogList.appendChild(li);
+      }
+    });
+  </script>
   <!-- 移除悬浮框相关的 JavaScript 代码 -->
 </body>
 
