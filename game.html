@@ -1,0 +1,292 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>贪吃蛇游戏</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 0;
+            padding: 0;
+            color: #333;
+            position: relative;
+            min-height: 100vh;
+            background: linear-gradient(to bottom, #e0f7fa, #b2ebf2);
+            overflow: hidden;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        body::before {
+            display: none;
+        }
+
+        .back-btn {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            background-color: white;
+            color: #2c3e50;
+            padding: 10px 20px;
+            text-decoration: none;
+            border-radius: 5px;
+            font-weight: 600;
+        }
+
+        .back-btn:hover {
+            background-color: #e0e0e0;
+        }
+
+        #game-board {
+            display: grid;
+            grid-template-columns: repeat(20, 20px);
+            grid-template-rows: repeat(20, 20px);
+            gap: 1px;
+            background-color: #333;
+            width: fit-content;
+            margin: 50px auto;
+        }
+
+        .cell {
+            width: 20px;
+            height: 20px;
+            background-color: #000;
+        }
+
+        .snake {
+            background-color: green;
+        }
+
+        .food {
+            background-color: red;
+        }
+
+        #rank-list {
+            margin-left: 50px;
+            background-color: white;
+            padding: 20px;
+            border-radius: 5px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+        }
+
+        #rank-list h2 {
+            margin-top: 0;
+        }
+
+        #rank-list ol {
+            padding-left: 20px;
+        }
+
+        /* 新增提示消息样式 */
+        .top-message {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            background-color: #ffc107;
+            color: #333;
+            text-align: center;
+            padding: 10px;
+            font-weight: bold;
+        }
+    </style>
+</head>
+
+<body>
+    <!-- 新增提示消息 -->
+    <div class="top-message">同一用户名只能玩一次</div>
+    <a href="index.html" class="back-btn">返回</a>
+    <div id="game-board"></div>
+    <div id="rank-list">
+        <h2>排名</h2>
+        <ol id="rank-ol"></ol>
+    </div>
+    <script>
+        const ROWS = 20;
+        const COLS = 20;
+        const BLOCK_SIZE = 20;
+
+        const gameBoard = document.getElementById('game-board');
+        const rankOl = document.getElementById('rank-ol');
+
+        // 初始化游戏板
+        function initBoard() {
+            for (let i = 0; i < ROWS; i++) {
+                for (let j = 0; j < COLS; j++) {
+                    const cell = document.createElement('div');
+                    cell.classList.add('cell');
+                    gameBoard.appendChild(cell);
+                }
+            }
+        }
+
+        // 获取单元格元素
+        function getCell(row, col) {
+            return gameBoard.children[row * COLS + col];
+        }
+
+        // 蛇的初始位置和方向
+        let snake = [{ row: 10, col: 10 }];
+        let direction = 'right';
+
+        // 食物的位置
+        let food;
+
+        // 生成随机食物位置
+        function generateFood() {
+            let newRow, newCol;
+            do {
+                newRow = Math.floor(Math.random() * ROWS);
+                newCol = Math.floor(Math.random() * COLS);
+            } while (snake.some(segment => segment.row === newRow && segment.col === newCol));
+            food = { row: newRow, col: newCol };
+            getCell(food.row, food.col).classList.add('food');
+        }
+
+        // 绘制蛇
+        function drawSnake() {
+            snake.forEach(segment => {
+                getCell(segment.row, segment.col).classList.add('snake');
+            });
+        }
+
+        // 清除蛇
+        function clearSnake() {
+            snake.forEach(segment => {
+                getCell(segment.row, segment.col).classList.remove('snake');
+            });
+        }
+
+        // 移动蛇
+        function moveSnake() {
+            const head = { ...snake[0] };
+            switch (direction) {
+                case 'up':
+                    head.row--;
+                    break;
+                case 'down':
+                    head.row++;
+                    break;
+                case 'left':
+                    head.col--;
+                    break;
+                case 'right':
+                    head.col++;
+                    break;
+            }
+
+            // 检查是否吃到食物
+            if (head.row === food.row && head.col === food.col) {
+                getCell(food.row, food.col).classList.remove('food');
+                generateFood();
+            } else {
+                snake.pop();
+            }
+
+            // 检查是否撞到墙壁或自己的身体
+            if (
+                head.row < 0 ||
+                head.row >= ROWS ||
+                head.col < 0 ||
+                head.col >= COLS ||
+                snake.some(segment => segment.row === head.row && segment.col === head.col)
+            ) {
+                // 移除蛇和食物的样式
+                clearSnake();
+                getCell(food.row, food.col).classList.remove('food');
+
+                // 获取当前蛇的长度
+                const score = snake.length;
+
+                // 提示输入用户名
+                let username;
+                do {
+                    username = prompt('游戏结束！请输入你的用户名：');
+                    if (!username) {
+                        alert('用户名不能为空，请重新输入。');
+                    }
+                } while (!username);
+
+                // 保存成绩
+                saveScore(username, score);
+                // 更新排名
+                updateRankList();
+
+                // 提示游戏结束
+                alert('游戏结束！即将返回主页面...');
+
+                // 跳转到 index.html
+                window.location.href = 'index.html';
+            }
+
+            snake.unshift(head);
+        }
+
+        // 处理键盘事件
+        document.addEventListener('keydown', function (event) {
+            switch (event.key) {
+                case 'ArrowUp':
+                    if (direction!== 'down') direction = 'up';
+                    break;
+                case 'ArrowDown':
+                    if (direction!== 'up') direction = 'down';
+                    break;
+                case 'ArrowLeft':
+                    if (direction!== 'right') direction = 'left';
+                    break;
+                case 'ArrowRight':
+                    if (direction!== 'left') direction = 'right';
+                    break;
+            }
+        });
+
+        // 保存成绩到 localStorage
+        function saveScore(username, score) {
+            try {
+                let scores = JSON.parse(localStorage.getItem('scores')) || {};
+                if (scores[username]) {
+                    scores[username] = Math.max(scores[username], score);
+                } else {
+                    scores[username] = score;
+                }
+                localStorage.setItem('scores', JSON.stringify(scores));
+            } catch (error) {
+                console.error('保存成绩时出现错误:', error);
+            }
+        }
+
+        // 更新排名列表
+        function updateRankList() {
+            try {
+                const scores = JSON.parse(localStorage.getItem('scores')) || {};
+                const sortedScores = Object.entries(scores).sort((a, b) => b[1] - a[1]);
+                rankOl.innerHTML = '';
+                sortedScores.forEach(([username, score], index) => {
+                    const li = document.createElement('li');
+                    li.textContent = `${index + 1}. ${username}: ${score}`;
+                    rankOl.appendChild(li);
+                });
+            } catch (error) {
+                console.error('更新排名列表时出现错误:', error);
+            }
+        }
+
+        // 初始化游戏
+        initBoard();
+        drawSnake();
+        generateFood();
+        updateRankList();
+
+        // 游戏循环
+        setInterval(() => {
+            clearSnake();
+            moveSnake();
+            drawSnake();
+        }, 200);
+    </script>
+</body>
+
+</html>
