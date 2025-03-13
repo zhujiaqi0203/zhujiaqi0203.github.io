@@ -33,7 +33,6 @@
 
         .ball {
             position: absolute;
-            /* 缩小球的大小 */
             width: 10px;
             height: 10px;
             background-color: red;
@@ -47,7 +46,6 @@
             border: 1px solid black;
         }
 
-        /* 添加返回图标的样式 */
         #back-icon {
             position: absolute;
             top: 10px;
@@ -56,25 +54,29 @@
             color: #333;
             font-size: 20px;
         }
-        /* 移除作弊按钮样式 */
-        /* 
-        #cheat-button {
+
+        #rank-button {
             position: absolute;
-            bottom: 10px;
-            left: 10px;
-            background-color: transparent;
-            border: none;
-            cursor: pointer;
+            top: 10px;
+            left: 60px;
+            text-decoration: none;
+            color: #333;
+            font-size: 20px;
         }
-        */
+
+        #brick-count {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            font-size: 20px;
+        }
     </style>
 </head>
 
 <body>
-    <!-- 添加返回图标的样式 -->
     <a id="back-icon" href="index.html">返回</a>
-    <!-- 移除作弊按钮 -->
-    <!-- <button id="cheat-button">作弊</button> -->
+    <a id="rank-button" href="score.html">排名</a>
+    <span id="brick-count">0</span>
     <div id="game-board">
         <div class="paddle" id="paddle"></div>
         <div class="ball" id="ball"></div>
@@ -83,31 +85,23 @@
         const gameBoard = document.getElementById('game-board');
         const paddle = document.getElementById('paddle');
         const ball = document.getElementById('ball');
-        // 移除获取作弊按钮元素的代码
-        // const cheatButton = document.getElementById('cheat-button');
+        const brickCountElement = document.getElementById('brick-count');
+        let brickCount = 0;
 
-        // 初始化球拍位置
         paddle.style.left = (gameBoard.offsetWidth - paddle.offsetWidth) / 2 + 'px';
-
-        // 更改球的初始位置
         ball.style.left = '20px';
         ball.style.top = '20px';
 
-        // 随机生成球的初始速度
         const minSpeed = 3;
         const maxSpeed = 6;
-        // 随机生成水平速度和方向
         let ballXSpeed = (Math.random() * (maxSpeed - minSpeed) + minSpeed) * (Math.random() > 0.5 ? 1 : -1);
-        // 随机生成垂直速度并确保球向上弹出
         let ballYSpeed = -(Math.random() * (maxSpeed - minSpeed) + minSpeed);
 
-        // 创建砖块
         const bricks = [];
         const brickRows = 3;
         const brickCols = 10;
         for (let i = 0; i < brickRows; i++) {
             for (let j = 0; j < brickCols; j++) {
-                // 随机决定是否创建砖块
                 if (Math.random() > 0.3) {
                     const brick = document.createElement('div');
                     brick.classList.add('brick');
@@ -115,11 +109,8 @@
                     let isOverlapping;
                     let x, y;
                     do {
-                        // 确保 x 坐标在游戏区域内
                         x = Math.random() * (gameBoard.offsetWidth - brick.offsetWidth);
-                        // 确保 y 坐标在上半部分游戏区域内
                         y = Math.random() * (gameBoard.offsetHeight / 2 - brick.offsetHeight);
-                        // 确保砖块不会超出游戏区域
                         x = Math.min(Math.max(x, 0), gameBoard.offsetWidth - brick.offsetWidth);
                         y = Math.min(Math.max(y, 0), gameBoard.offsetHeight / 2 - brick.offsetHeight);
 
@@ -148,7 +139,6 @@
                     brick.style.left = x + 'px';
                     brick.style.top = y + 'px';
 
-                    // 随机生成颜色
                     const randomColor = '#' + Math.floor(Math.random() * 16777215).toString(16);
                     brick.style.backgroundColor = randomColor;
 
@@ -158,13 +148,11 @@
             }
         }
 
-        // 检查并移除重叠或越界的砖块
         for (let i = bricks.length - 1; i >= 0; i--) {
             const brick = bricks[i];
             const rect = brick.getBoundingClientRect();
             const gameRect = gameBoard.getBoundingClientRect();
 
-            // 检查是否越界
             if (
                 rect.left < gameRect.left ||
                 rect.right > gameRect.right ||
@@ -175,8 +163,6 @@
                 bricks.splice(i, 1);
                 continue;
             }
-
-            // 检查是否重叠
             for (let j = i - 1; j >= 0; j--) {
                 const otherBrick = bricks[j];
                 const otherRect = otherBrick.getBoundingClientRect();
@@ -193,7 +179,6 @@
             }
         }
 
-        // 移动球拍 - 兼容鼠标和触摸事件
         function movePaddle(event) {
             const touch = event.touches ? event.touches[0] : event;
             const paddleX = touch.clientX - gameBoard.offsetLeft - paddle.offsetWidth / 2;
@@ -205,45 +190,26 @@
         document.addEventListener('mousemove', movePaddle);
         document.addEventListener('touchmove', movePaddle);
 
-        // 移除作弊模式相关代码
-        // let cheatMode = false;
-
-        // 移除按钮点击事件代码
-        // cheatButton.addEventListener('click', () => {
-        //     const password = prompt('请输入密码');
-        //     if (password === '20130203') {
-        //         cheatMode = true;
-        //         alert('作弊模式已开启');
-        //     } else {
-        //         alert('密码错误');
-        //     }
-        // });
-
-        // 游戏循环
         function gameLoop() {
             const ballRect = ball.getBoundingClientRect();
             const gameBoardRect = gameBoard.getBoundingClientRect();
             const paddleRect = paddle.getBoundingClientRect();
 
-            // 检查球是否撞到左右边界
             if (ballRect.left <= gameBoardRect.left || ballRect.right >= gameBoardRect.right) {
                 ballXSpeed = -ballXSpeed;
             }
-            // 检查球是否撞到上边界
             if (ballRect.top <= gameBoardRect.top) {
                 ballYSpeed = -ballYSpeed;
             }
-            // 检查球是否撞到球拍
             if (
                 ballRect.bottom >= paddleRect.top &&
                 ballRect.left <= paddleRect.right &&
                 ballRect.right >= paddleRect.left
             ) {
                 ballYSpeed = -ballYSpeed;
-                // 让球稍微向上移动，避免立即再次触发碰撞判定
                 ball.style.top = parseInt(ball.style.top) - 1 + 'px';
             }
-            // 检查球是否撞到砖块
+
             bricks.forEach((brick, index) => {
                 const brickRect = brick.getBoundingClientRect();
                 if (
@@ -255,36 +221,28 @@
                     brick.parentNode.removeChild(brick);
                     bricks.splice(index, 1);
                     ballYSpeed = -ballYSpeed;
+                    brickCount++;
+                    brickCountElement.textContent = brickCount;
                 }
             });
 
-            // 移除作弊模式相关逻辑
-            // if (cheatMode) {
-            //     const newPaddleX = ballRect.left + ballRect.width / 2 - paddleRect.width / 2;
-            //     if (newPaddleX > 0 && newPaddleX < gameBoardRect.width - paddleRect.width) {
-            //         paddle.style.left = newPaddleX + 'px';
-            //     }
-            // }
-
-            // 检查球是否掉出底部
             if (ballRect.top >= gameBoardRect.bottom) {
-                alert('游戏结束！');
+                // 移除输入用户名和保存成绩的逻辑
                 return;
             }
 
-            // 检查是否所有砖块都被清除
             if (bricks.length === 0) {
-                alert('恭喜你，通关啦！');
+                // 移除输入用户名和保存成绩的逻辑
                 return;
             }
 
-            // 更新球的位置
             ball.style.left = parseInt(ball.style.left) + ballXSpeed + 'px';
             ball.style.top = parseInt(ball.style.top) + ballYSpeed + 'px';
 
             requestAnimationFrame(gameLoop);
         }
 
+        // 移除 saveScore 函数
         gameLoop();
     </script>
 </body>
