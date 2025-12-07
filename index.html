@@ -7,6 +7,8 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/lucide@0.544.0/dist/umd/lucide.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.8/dist/chart.umd.min.js"></script>
+    <!-- 引入SheetJS库处理Excel文件 -->
+    <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
     <style>
         :root {
             --primary-color: #4F46E5;
@@ -169,10 +171,16 @@
         <div id="students-page" class="page hidden">
             <div class="flex justify-between items-center mb-6">
                 <h2 class="text-3xl font-bold">学生列表</h2>
-                <button id="add-student-btn" class="btn-primary px-4 py-2 rounded-lg flex items-center space-x-2">
-                    <i data-lucide="plus"></i>
-                    <span>添加学生</span>
-                </button>
+                <div class="flex space-x-4">
+                    <button id="batch-add-student-btn" class="btn-primary px-4 py-2 rounded-lg flex items-center space-x-2">
+                        <i data-lucide="file-plus"></i>
+                        <span>批量添加</span>
+                    </button>
+                    <button id="add-student-btn" class="btn-primary px-4 py-2 rounded-lg flex items-center space-x-2">
+                        <i data-lucide="plus"></i>
+                        <span>添加学生</span>
+                    </button>
+                </div>
             </div>
             <div class="card p-6">
                 <div class="flex justify-between items-center mb-4">
@@ -320,14 +328,23 @@
             </div>
             <div class="card p-6 mt-6">
                 <h3 class="text-xl font-bold mb-4">数据管理</h3>
-                <div class="flex space-x-4">
-                    <button id="export-data-btn" class="btn-primary px-4 py-2 rounded-lg flex items-center space-x-2">
+                <div class="flex space-x-4 flex-wrap">
+                    <button id="export-data-excel-btn" class="btn-primary px-4 py-2 rounded-lg flex items-center space-x-2">
                         <i data-lucide="download"></i>
-                        <span>导出数据</span>
+                        <span>导出为Excel</span>
                     </button>
+                    <button id="export-data-json-btn" class="btn-primary px-4 py-2 rounded-lg flex items-center space-x-2">
+                        <i data-lucide="download"></i>
+                        <span>导出为JSON</span>
+                    </button>
+                    <button id="import-excel-btn" class="btn-primary px-4 py-2 rounded-lg flex items-center space-x-2">
+                        <i data-lucide="upload"></i>
+                        <span>导入Excel学生数据</span>
+                    </button>
+                    <input type="file" id="import-excel-input" accept=".xlsx,.xls" class="hidden">
                     <button id="import-data-btn" class="btn-primary px-4 py-2 rounded-lg flex items-center space-x-2">
                         <i data-lucide="upload"></i>
-                        <span>导入数据</span>
+                        <span>导入JSON数据</span>
                     </button>
                     <input type="file" id="import-data-input" accept=".json" class="hidden">
                     <button id="clear-data-btn" class="bg-red-500 text-white px-4 py-2 rounded-lg flex items-center space-x-2">
@@ -355,6 +372,30 @@
                 <div class="flex justify-end space-x-4">
                     <button type="button" id="cancel-add-student" class="px-4 py-2 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-700">取消</button>
                     <button type="submit" class="btn-primary px-4 py-2 rounded-lg">添加</button>
+                </div>
+            </form>
+        </div>
+    </div>
+    
+    <!-- 批量添加学生Modal -->
+    <div id="batch-add-student-modal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center hidden">
+        <div class="card p-8 rounded-lg w-full max-w-lg">
+            <h3 class="text-2xl font-bold mb-4">批量添加学生</h3>
+            <div class="mb-4 text-sm text-muted-text-color">
+                <p>请按照以下格式输入学生信息，每行一个学生：</p>
+                <p class="font-mono bg-gray-100 dark:bg-gray-800 p-2 rounded">姓名 学号</p>
+                <p>例如：</p>
+                <p class="font-mono bg-gray-100 dark:bg-gray-800 p-2 rounded">张三 2025001</p>
+                <p class="font-mono bg-gray-100 dark:bg-gray-800 p-2 rounded">李四 2025002</p>
+            </div>
+            <form id="batch-add-student-form" class="space-y-4">
+                <div>
+                    <label for="batch-student-data" class="block mb-2">学生数据</label>
+                    <textarea id="batch-student-data" rows="10" class="w-full border rounded-lg px-4 py-2 bg-transparent" placeholder="请输入学生信息，每行格式：姓名 学号"></textarea>
+                </div>
+                <div class="flex justify-end space-x-4">
+                    <button type="button" id="cancel-batch-add-student" class="px-4 py-2 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-700">取消</button>
+                    <button type="submit" class="btn-primary px-4 py-2 rounded-lg">批量添加</button>
                 </div>
             </form>
         </div>
@@ -781,6 +822,144 @@
                 lucide.createIcons();
             };
 
+            // --- Excel导出功能 ---
+            const exportToExcel = () => {
+                // 创建工作簿
+                const wb = XLSX.utils.book_new();
+                
+                // 准备学生数据（包含总积分）
+                const studentData = students.map(student => ({
+                    学号: student.id,
+                    姓名: student.name,
+                    总积分: getStudentTotalScore(student.id)
+                }));
+                
+                // 准备积分记录数据
+                const scoreData = scoreRecords.map(record => {
+                    const student = students.find(s => s.id === record.studentId) || { name: '未知学生' };
+                    const type = scoreTypes.find(t => t.id === record.typeId) || { name: '未知类型' };
+                    return {
+                        学生姓名: student.name,
+                        学生学号: student.id,
+                        积分类型: type.name,
+                        积分值: record.value,
+                        操作时间: new Date(record.timestamp).toLocaleString(),
+                        备注: record.note || ''
+                    };
+                });
+                
+                // 准备积分类型数据
+                const scoreTypeData = scoreTypes.map(type => ({
+                    积分类型: type.name,
+                    积分值: type.value
+                }));
+                
+                // 创建工作表
+                const studentWs = XLSX.utils.json_to_sheet(studentData);
+                const scoreWs = XLSX.utils.json_to_sheet(scoreData);
+                const scoreTypeWs = XLSX.utils.json_to_sheet(scoreTypeData);
+                
+                // 将工作表添加到工作簿
+                XLSX.utils.book_append_sheet(wb, studentWs, '学生信息');
+                XLSX.utils.book_append_sheet(wb, scoreWs, '积分记录');
+                XLSX.utils.book_append_sheet(wb, scoreTypeWs, '积分类型');
+                
+                // 导出Excel文件
+                XLSX.writeFile(wb, `七(3)班积分数据_${new Date().toISOString().split('T')[0]}.xlsx`);
+                showToast('Excel文件导出成功！');
+            };
+            
+            // --- 从Excel导入学生数据 ---
+            const importStudentsFromExcel = (file) => {
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    try {
+                        const data = new Uint8Array(e.target.result);
+                        const wb = XLSX.read(data, { type: 'array' });
+                        
+                        // 读取第一个工作表
+                        const wsname = wb.SheetNames[0];
+                        const ws = wb.Sheets[wsname];
+                        
+                        // 转换为JSON
+                        const jsonData = XLSX.utils.sheet_to_json(ws);
+                        
+                        if (!jsonData || jsonData.length === 0) {
+                            showToast('Excel文件中未找到数据！');
+                            return;
+                        }
+                        
+                        // 处理导入的数据
+                        let importedCount = 0;
+                        let duplicateCount = 0;
+                        
+                        jsonData.forEach(row => {
+                            // 支持多种列名格式
+                            let name = row.姓名 || row.name || row.Name;
+                            let id = row.学号 || row.学生学号 || row.id || row.ID;
+                            
+                            // 如果是"姓名 学号"格式的单元格
+                            if (typeof name === 'string' && !id) {
+                                const parts = name.split(/\s+/);
+                                if (parts.length >= 2) {
+                                    id = parts.pop();
+                                    name = parts.join(' ');
+                                }
+                            }
+                            
+                            if (name && id) {
+                                if (!students.some(s => s.id === id.toString())) {
+                                    students.push({
+                                        id: id.toString(),
+                                        name: name.toString()
+                                    });
+                                    importedCount++;
+                                } else {
+                                    duplicateCount++;
+                                }
+                            }
+                        });
+                        
+                        saveData();
+                        showToast(`成功导入 ${importedCount} 名学生，${duplicateCount} 名学生学号重复已跳过`);
+                    } catch (error) {
+                        console.error('Excel导入错误:', error);
+                        showToast('Excel文件解析失败！');
+                    }
+                };
+                reader.readAsArrayBuffer(file);
+            };
+            
+            // --- 批量添加学生解析 ---
+            const parseBatchStudentData = (text) => {
+                const lines = text.trim().split('\n');
+                const newStudents = [];
+                const duplicates = [];
+                const invalid = [];
+                
+                lines.forEach((line, index) => {
+                    const trimmedLine = line.trim();
+                    if (!trimmedLine) return;
+                    
+                    // 按空格分割，支持多个空格
+                    const parts = trimmedLine.split(/\s+/);
+                    if (parts.length >= 2) {
+                        const id = parts.pop();
+                        const name = parts.join(' ');
+                        
+                        if (students.some(s => s.id === id)) {
+                            duplicates.push({ line: index + 1, name, id });
+                        } else {
+                            newStudents.push({ id, name });
+                        }
+                    } else {
+                        invalid.push(index + 1);
+                    }
+                });
+                
+                return { newStudents, duplicates, invalid };
+            };
+
             // --- Event Listeners ---
             // Navigation
             document.querySelectorAll('.nav-link').forEach(link => {
@@ -824,6 +1003,46 @@
                 document.getElementById('add-student-modal').classList.add('hidden');
                 document.getElementById('add-student-form').reset();
                 showToast('学生添加成功！');
+            });
+
+            // 批量添加学生事件
+            document.getElementById('batch-add-student-btn').addEventListener('click', () => {
+                document.getElementById('batch-add-student-modal').classList.remove('hidden');
+            });
+
+            document.getElementById('cancel-batch-add-student').addEventListener('click', () => {
+                document.getElementById('batch-add-student-modal').classList.add('hidden');
+                document.getElementById('batch-student-data').value = '';
+            });
+
+            document.getElementById('batch-add-student-form').addEventListener('submit', (e) => {
+                e.preventDefault();
+                const textData = document.getElementById('batch-student-data').value;
+                const { newStudents, duplicates, invalid } = parseBatchStudentData(textData);
+                
+                if (newStudents.length > 0) {
+                    students.push(...newStudents);
+                    saveData();
+                }
+                
+                let message = '';
+                if (newStudents.length > 0) {
+                    message += `成功添加 ${newStudents.length} 名学生。`;
+                }
+                if (duplicates.length > 0) {
+                    message += ` ${duplicates.length} 名学生学号重复已跳过。`;
+                }
+                if (invalid.length > 0) {
+                    message += ` 第 ${invalid.join(',')} 行格式无效。`;
+                }
+                
+                if (!message) {
+                    message = '未添加任何学生，请检查输入格式。';
+                }
+                
+                showToast(message);
+                document.getElementById('batch-add-student-modal').classList.add('hidden');
+                document.getElementById('batch-student-data').value = '';
             });
 
             // Edit/Delete Student
@@ -1064,7 +1283,11 @@
 
 
             // Data Import/Export
-            document.getElementById('export-data-btn').addEventListener('click', () => {
+            // 导出为Excel
+            document.getElementById('export-data-excel-btn').addEventListener('click', exportToExcel);
+            
+            // 导出为JSON（保留原有功能）
+            document.getElementById('export-data-json-btn').addEventListener('click', () => {
                 const data = { students, scoreRecords, scoreTypes };
                 const dataStr = JSON.stringify(data);
                 const dataUri = 'data:application/json;charset=utf-8,'+ encodeURIComponent(dataStr);
@@ -1073,9 +1296,22 @@
                 linkElement.setAttribute('href', dataUri);
                 linkElement.setAttribute('download', exportFileDefaultName);
                 linkElement.click();
-                showToast('数据导出成功！');
+                showToast('JSON数据导出成功！');
             });
 
+            // 导入Excel学生数据
+            document.getElementById('import-excel-btn').addEventListener('click', () => {
+                document.getElementById('import-excel-input').click();
+            });
+
+            document.getElementById('import-excel-input').addEventListener('change', (e) => {
+                const file = e.target.files[0];
+                if (!file) return;
+                importStudentsFromExcel(file);
+                e.target.value = ''; // 重置输入
+            });
+
+            // 导入JSON数据（保留原有功能）
             document.getElementById('import-data-btn').addEventListener('click', () => {
                 document.getElementById('import-data-input').click();
             });
@@ -1093,7 +1329,7 @@
                                 scoreRecords = data.scoreRecords;
                                 scoreTypes = data.scoreTypes;
                                 saveData();
-                                showToast('数据导入成功！');
+                                showToast('JSON数据导入成功！');
                             }
                         } else {
                             showToast('无效的数据文件！');
