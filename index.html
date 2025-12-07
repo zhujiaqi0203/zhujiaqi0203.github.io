@@ -1,1797 +1,1132 @@
+<!DOCTYPE html>
 <html lang="zh-CN">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>趣味像素贪吃蛇</title>
-  <!-- Tailwind CSS v3 -->
-  <script src="https://cdn.tailwindcss.com"></script>
-  <!-- Font Awesome -->
-  <link href="https://cdn.jsdelivr.net/npm/font-awesome@4.7.0/css/font-awesome.min.css" rel="stylesheet">
-  
-  <script>
-    tailwind.config = {
-      theme: {
-        extend: {
-          colors: {
-            primary: '#0EFF37',
-            secondary: '#37383C',
-            accent: '#0EFF37',
-            danger: '#ff4d4f',
-            success: '#52c41a',
-            dark: '#121212',
-            // 特殊食物颜色
-            foodDouble: '#FFD700',    // 双倍分-金色
-            foodSlow: '#1E90FF',      // 减速-蓝色
-            foodSplit: '#9370DB',     // 分身-紫色
-            foodRainbow: '#FF6347',   // 彩虹-番茄红
-          },
-          fontFamily: {
-            pixel: ['Doto', 'monospace', 'system-ui'],
-          },
-          animation: {
-            'pulse-slow': 'pulse 3s cubic-bezier(0.4, 0, 0.6, 1) infinite',
-            'glow': 'glow 2s ease-in-out infinite alternate',
-            'blink': 'blink 1s step-end infinite',
-            'score-pop': 'score-pop 0.5s ease-out',
-            'explode': 'explode 0.5s ease-out forwards',
-            'float': 'float 3s ease-in-out infinite',
-            'spin-slow': 'spin 4s linear infinite',
-            'slide-in': 'slide-in 0.5s ease-out forwards',
-          },
-          keyframes: {
-            glow: {
-              '0%': { textShadow: '0 0 5px #fff, 0 0 10px #fff, 0 0 15px #ffeb3b, 0 0 20px #ffeb3b' },
-              '100%': { textShadow: '0 0 10px #fff, 0 0 20px #fff, 0 0 30px #ff9800, 0 0 40px #ff9800' },
-            },
-            blink: {
-              '0%, 100%': { opacity: '1' },
-              '50%': { opacity: '0.5' },
-            },
-            'score-pop': {
-              '0%': { transform: 'scale(1)', opacity: '1' },
-              '50%': { transform: 'scale(1.5)', opacity: '0.8' },
-              '100%': { transform: 'scale(1)', opacity: '0' },
-            },
-            explode: {
-              '0%': { transform: 'scale(1)', opacity: '1' },
-              '100%': { transform: 'scale(2)', opacity: '0' },
-            },
-            float: {
-              '0%, 100%': { transform: 'translateY(0)' },
-              '50%': { transform: 'translateY(-10px)' },
-            },
-            'slide-in': {
-              '0%': { transform: 'translateX(-100%)', opacity: '0' },
-              '100%': { transform: 'translateX(0)', opacity: '1' },
-            },
-          },
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>七（3）班积分系统</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/lucide@0.544.0/dist/umd/lucide.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.8/dist/chart.umd.min.js"></script>
+    <style>
+        :root {
+            --primary-color: #4F46E5;
+            --secondary-color: #EC4899;
+            --background-color: #F3F4F6;
+            --card-background: #FFFFFF;
+            --text-color: #1F2937;
+            --muted-text-color: #6B7280;
         }
-      }
-    }
-  </script>
-  
-  <style type="text/tailwindcss">
-    @layer utilities {
-      .pixel-borders {
-        box-shadow: 
-          -6px 0 0 0 theme('colors.secondary'),
-          6px 0 0 0 theme('colors.secondary'),
-          0 -6px 0 0 theme('colors.secondary'),
-          0 6px 0 0 theme('colors.secondary');
-      }
-      .pixel-button {
-        @apply relative px-6 py-3 text-xl font-bold transform transition-all duration-150 
-               bg-accent text-dark shadow-[4px_4px_0_rgba(69,101,75,1)] 
-               hover:-translate-x-1 hover:-translate-y-1 hover:shadow-[6px_6px_0_rgba(69,101,75,1)];
-      }
-      .pixel-text {
-        font-family: 'Doto', monospace;
-      }
-      .glow-effect {
-        filter: drop-shadow(0 0 8px currentColor);
-      }
-      .rainbow-bg {
-        background: linear-gradient(90deg, #ff0000, #ff9a00, #d0de21, #4fdc4a, #3fdad8, #2fc9e2, #1c7fee, #5f15f2, #ff0000);
-        background-size: 300% 300%;
-        animation: rainbow 8s ease infinite;
-      }
-      @keyframes rainbow {
-        0% {background-position: 0% 50%}
-        50% {background-position: 100% 50%}
-        100% {background-position: 0% 50%}
-      }
-      .challenge-bar {
-        @apply h-2 bg-gray-700 rounded-full overflow-hidden mt-1;
-      }
-      .challenge-progress {
-        @apply h-full bg-accent transition-all duration-300;
-      }
-    }
-  </style>
-  
-  <!-- 像素字体 -->
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Doto:wght@400;700&display=swap" rel="stylesheet">
+        .dark {
+            --primary-color: #6366F1;
+            --secondary-color: #F472B6;
+            --background-color: #111827;
+            --card-background: #1F2937;
+            --text-color: #F9FAFB;
+            --muted-text-color: #9CA3AF;
+        }
+        body {
+            background-color: var(--background-color);
+            color: var(--text-color);
+            font-family: 'Inter', sans-serif;
+        }
+        .sidebar {
+            background-color: var(--card-background);
+        }
+        .main-content {
+            background-color: var(--background-color);
+        }
+        .card {
+            background-color: var(--card-background);
+            border-radius: 0.75rem;
+            box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+        }
+        .btn-primary {
+            background-color: var(--primary-color);
+            color: white;
+            transition: background-color 0.3s;
+        }
+        .btn-primary:hover {
+            background-color: #4338CA;
+        }
+        .dark .btn-primary:hover {
+            background-color: #4F46E5;
+        }
+        .toast {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            padding: 1rem 1.5rem;
+            background-color: #1F2937;
+            color: #F9FAFB;
+            border-radius: 0.5rem;
+            box-shadow: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
+            opacity: 0;
+            transform: translateY(-20px);
+            transition: opacity 0.3s, transform 0.3s;
+            z-index: 9999;
+        }
+        .toast.show {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    </style>
 </head>
-<body class="bg-dark min-h-screen flex flex-col items-center justify-start p-0 text-white overflow-hidden" style="touch-action: none; padding-top: env(safe-area-inset-top);">
-  <div class="w-full max-w-3xl mx-auto flex flex-col items-center h-screen justify-between py-2 px-2 box-sizing: border-box" id="main-container">
-    <!-- 顶部状态栏 -->
-    <div class="w-full flex justify-between items-center mb-1">
-      <div class="flex items-center gap-2">
-        <div id="skin-selector" class="pixel-button px-3 py-1 text-sm">
-          <i class="fa fa-paint-brush mr-1"></i>皮肤
-        </div>
-        <div id="achievements" class="pixel-button px-3 py-1 text-sm">
-          <i class="fa fa-trophy mr-1"></i>成就
-        </div>
-      </div>
-      <div id="score-container" class="px-3 py-1 rounded bg-black/50 pixel-text text-lg">
-        分数: <span id="score" class="text-accent">0</span>
-        <span class="ml-2 text-xs text-gray-400">(最高: <span id="high-score">0</span>)</span>
-      </div>
-    </div>
-    
-    <!-- 游戏标题 -->
-    <h1 class="pixel-text text-3xl md:text-4xl font-bold text-center mb-1 text-accent glow-effect">SNAKE GAME</h1>
-    
-    <!-- 状态提示区 -->
-    <div class="w-full flex flex-col gap-1 mb-1">
-      <!-- 挑战任务 -->
-      <div id="challenge-container" class="px-3 py-1 rounded bg-black/50 pixel-text text-sm">
-        <div class="flex justify-between">
-          <span>当前挑战: <span id="challenge-text">吃5个食物</span></span>
-          <span id="challenge-reward">+50分</span>
-        </div>
-        <div class="challenge-bar">
-          <div id="challenge-progress" class="challenge-progress" style="width: 0%"></div>
-        </div>
-      </div>
-      
-      <!-- 效果状态 -->
-      <div id="buff-container" class="flex gap-2 px-3 py-1 hidden">
-        <!-- 动态添加buff图标 -->
-      </div>
-    </div>
-    
-    <!-- 游戏容器 -->
-    <div id="game-container" class="relative overflow-hidden pixel-borders transition-all duration-300 w-full flex-grow flex items-center justify-center">
-      <canvas id="gameCanvas" class="block bg-dark"></canvas>
-      
-      <!-- 漂浮分数 -->
-      <div id="floating-scores"></div>
-      
-      <!-- 开始屏幕 -->
-      <div id="start-screen" class="absolute inset-0 flex flex-col items-center justify-center bg-black/80 z-10">
-        <h2 class="pixel-text text-4xl mb-6 text-primary animate-pulse">准备好了吗？</h2>
-        <button id="start-button" class="pixel-button text-2xl">开始游戏</button>
-        <div class="mt-8 text-sm pixel-text text-gray-400 max-w-xs text-center">
-          <p>特殊食物有惊喜效果！完成挑战可获得额外奖励</p>
-          <div class="flex justify-center gap-4 mt-3">
-            <div class="flex flex-col items-center">
-              <div class="w-6 h-6 bg-foodDouble rounded-sm"></div>
-              <span class="text-xs mt-1">双倍分</span>
-            </div>
-            <div class="flex flex-col items-center">
-              <div class="w-6 h-6 bg-foodSlow rounded-sm"></div>
-              <span class="text-xs mt-1">减速</span>
-            </div>
-            <div class="flex flex-col items-center">
-              <div class="w-6 h-6 bg-foodSplit rounded-sm"></div>
-              <span class="text-xs mt-1">分身</span>
-            </div>
-            <div class="flex flex-col items-center">
-              <div class="w-6 h-6 rainbow-bg rounded-sm"></div>
-              <span class="text-xs mt-1">彩虹</span>
-            </div>
-          </div>
-        </div>
-      </div>
-      
-      <!-- 游戏结束屏幕 -->
-      <div id="game-over-screen" class="absolute inset-0 flex flex-col items-center justify-center bg-black/80 z-10 hidden">
-        <h2 class="pixel-text text-4xl mb-2 text-danger animate-blink">游戏结束</h2>
-        <p class="pixel-text text-xl mb-1">最终得分: <span id="final-score" class="text-accent">0</span></p>
-        <p class="pixel-text text-sm text-gray-400 mb-4">最高纪录: <span id="game-over-high-score" class="text-accent">0</span></p>
-        <div id="level-up-message" class="mb-4 pixel-text text-success hidden">
-          <i class="fa fa-arrow-up"></i> 升级了！解锁新皮肤
-        </div>
-        <div id="achievement-unlocked" class="mb-4 px-4 py-2 bg-accent/20 rounded hidden">
-          <p class="pixel-text text-center text-accent"><i class="fa fa-trophy"></i> 解锁成就！</p>
-          <p id="achievement-name" class="pixel-text text-center text-sm mt-1"></p>
-        </div>
-        <button id="restart-button" class="pixel-button text-xl">再来一局</button>
-        <button id="share-button" class="pixel-button text-xl mt-3">分享成绩</button>
-      </div>
-      
-      <!-- 皮肤选择界面 -->
-      <div id="skin-screen" class="absolute inset-0 flex flex-col items-center justify-center bg-black/90 z-20 hidden">
-        <h2 class="pixel-text text-3xl mb-4 text-accent">选择皮肤</h2>
-        <div id="skins-container" class="grid grid-cols-2 md:grid-cols-3 gap-4 w-full max-w-md px-4">
-          <!-- 皮肤选项动态生成 -->
-        </div>
-        <button id="close-skin-button" class="pixel-button mt-6">关闭</button>
-      </div>
-      
-      <!-- 成就界面 -->
-      <div id="achievements-screen" class="absolute inset-0 flex flex-col items-center justify-start bg-black/90 z-20 hidden p-4 overflow-y-auto">
-        <h2 class="pixel-text text-3xl mb-4 text-accent">成就墙</h2>
-        <div id="achievements-container" class="w-full max-w-md space-y-3">
-          <!-- 成就动态生成 -->
-        </div>
-        <button id="close-achievements-button" class="pixel-button mt-6 mb-8">关闭</button>
-      </div>
-    </div>
-    
-    <!-- 移动端控制按钮 -->
-    <div id="mobile-controls-container" class="w-full max-w-xs mt-2 mb-[80px]">
-      <div id="mobile-controls" class="grid grid-cols-3 gap-3 w-full">
-        <div class="col-start-2">
-          <button id="up-button" class="pixel-button h-16 flex items-center justify-center">
-            <i class="fa fa-arrow-up text-2xl"></i>
-          </button>
-        </div>
-        <div class="col-start-1">
-          <button id="left-button" class="pixel-button h-16 flex items-center justify-center">
-            <i class="fa fa-arrow-left text-2xl"></i>
-          </button>
-        </div>
-        <div class="col-start-2">
-          <button id="down-button" class="pixel-button h-16 flex items-center justify-center">
-            <i class="fa fa-arrow-down text-2xl"></i>
-          </button>
-        </div>
-        <div class="col-start-3">
-          <button id="right-button" class="pixel-button h-16 flex items-center justify-center">
-            <i class="fa fa-arrow-right text-2xl"></i>
-          </button>
-        </div>
-      </div>
-    </div>
-  </div>
+<body class="flex h-screen">
 
-  <script>
-    // 游戏配置
-    const config = {
-      gridSize: 30,
-      initialSpeed: 150,
-      speedIncrease: 3,
-      minSpeed: 60,
-      // 特殊食物概率
-      specialFoodRates: {
-        normal: 70,      // 普通食物70%
-        double: 10,      // 双倍分10%
-        slow: 10,        // 减速10%
-        split: 5,        // 分身5%
-        rainbow: 5       // 彩虹5%
-      },
-      // 效果持续时间
-      effectDurations: {
-        slow: 5000,      // 减速5秒
-        rainbow: 8000    // 彩虹8秒
-      }
-    };
+    <!-- Sidebar -->
+    <aside class="sidebar w-64 flex-shrink-0 p-4 space-y-6">
+        <div class="flex items-center space-x-2">
+            <i data-lucide="award" class="text-primary-color"></i>
+            <h1 class="text-2xl font-bold">积分系统</h1>
+        </div>
+        <nav class="space-y-2">
+            <a href="#" class="nav-link flex items-center space-x-2 p-2 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-700" data-page="dashboard">
+                <i data-lucide="layout-dashboard"></i>
+                <span>仪表盘</span>
+            </a>
+            <a href="#" class="nav-link flex items-center space-x-2 p-2 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-700" data-page="students">
+                <i data-lucide="users"></i>
+                <span>学生列表</span>
+            </a>
+            <a href="#" class="nav-link flex items-center space-x-2 p-2 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-700" data-page="scores">
+                <i data-lucide="file-plus-2"></i>
+                <span>积分操作</span>
+            </a>
+            <a href="#" class="nav-link flex items-center space-x-2 p-2 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-700" data-page="statistics">
+                <i data-lucide="bar-chart-3"></i>
+                <span>积分统计</span>
+            </a>
+            <a href="#" class="nav-link flex items-center space-x-2 p-2 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-700" data-page="settings">
+                <i data-lucide="settings"></i>
+                <span>系统设置</span>
+            </a>
+        </nav>
+        <div class="absolute bottom-4">
+            <button id="theme-toggle" class="flex items-center space-x-2 p-2 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-700">
+                <i data-lucide="sun" class="sun-icon"></i>
+                <i data-lucide="moon" class="moon-icon hidden"></i>
+                <span>切换主题</span>
+            </button>
+        </div>
+    </aside>
+
+    <!-- Main Content -->
+    <main id="main-content" class="main-content flex-1 p-6 overflow-y-auto">
+        <!-- Dashboard Page -->
+        <div id="dashboard-page" class="page">
+            <h2 class="text-3xl font-bold mb-6">仪表盘</h2>
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                <div class="card p-6">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <p class="text-muted-text-color">学生总数</p>
+                            <p id="total-students" class="text-3xl font-bold">0</p>
+                        </div>
+                        <i data-lucide="users" class="text-primary-color"></i>
+                    </div>
+                </div>
+                <div class="card p-6">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <p class="text-muted-text-color">总积分</p>
+                            <p id="total-scores" class="text-3xl font-bold">0</p>
+                        </div>
+                        <i data-lucide="award" class="text-primary-color"></i>
+                    </div>
+                </div>
+                <div class="card p-6">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <p class="text-muted-text-color">本月积分变动</p>
+                            <p id="monthly-change" class="text-3xl font-bold">+0</p>
+                        </div>
+                        <i data-lucide="trending-up" class="text-secondary-color"></i>
+                    </div>
+                </div>
+                <div class="card p-6">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <p class="text-muted-text-color">积分类型</p>
+                            <p id="score-types" class="text-3xl font-bold">0</p>
+                        </div>
+                        <i data-lucide="tags" class="text-secondary-color"></i>
+                    </div>
+                </div>
+            </div>
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mt-6">
+                <div class="lg:col-span-2 card p-6">
+                    <h3 class="text-xl font-bold mb-4">积分排行榜</h3>
+                    <canvas id="top-students-chart"></canvas>
+                </div>
+                <div class="card p-6">
+                    <h3 class="text-xl font-bold mb-4">积分类型分布</h3>
+                    <canvas id="score-type-chart"></canvas>
+                </div>
+            </div>
+        </div>
+
+        <!-- Students Page -->
+        <div id="students-page" class="page hidden">
+            <div class="flex justify-between items-center mb-6">
+                <h2 class="text-3xl font-bold">学生列表</h2>
+                <button id="add-student-btn" class="btn-primary px-4 py-2 rounded-lg flex items-center space-x-2">
+                    <i data-lucide="plus"></i>
+                    <span>添加学生</span>
+                </button>
+            </div>
+            <div class="card p-6">
+                <div class="flex justify-between items-center mb-4">
+                    <div class="flex items-center space-x-2">
+                        <input type="text" id="student-search" placeholder="搜索学生..." class="border rounded-lg px-4 py-2 bg-transparent">
+                        <button id="search-btn" class="p-2 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-700">
+                            <i data-lucide="search"></i>
+                        </button>
+                    </div>
+                    <select id="student-sort" class="border rounded-lg px-4 py-2 bg-transparent">
+                        <option value="name-asc">姓名 (A-Z)</option>
+                        <option value="name-desc">姓名 (Z-A)</option>
+                        <option value="score-asc">积分从低到高</option>
+                        <option value="score-desc">积分从高到低</option>
+                    </select>
+                </div>
+                <table class="w-full text-left">
+                    <thead>
+                        <tr class="border-b dark:border-gray-700">
+                            <th class="p-2">学号</th>
+                            <th class="p-2">姓名</th>
+                            <th class="p-2">总积分</th>
+                            <th class="p-2">操作</th>
+                        </tr>
+                    </thead>
+                    <tbody id="students-table-body">
+                        <!-- Student rows will be inserted here -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Scores Page -->
+        <div id="scores-page" class="page hidden">
+            <h2 class="text-3xl font-bold mb-6">积分操作</h2>
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                <div class="lg:col-span-2 card p-6">
+                    <h3 class="text-xl font-bold mb-4">积分记录</h3>
+                    <div class="flex justify-between items-center mb-4">
+                        <div class="flex items-center space-x-2">
+                            <input type="text" id="score-search" placeholder="搜索记录..." class="border rounded-lg px-4 py-2 bg-transparent">
+                            <button id="score-search-btn" class="p-2 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-700">
+                                <i data-lucide="search"></i>
+                            </button>
+                        </div>
+                        <select id="score-filter" class="border rounded-lg px-4 py-2 bg-transparent">
+                            <option value="all">所有类型</option>
+                            <!-- Score types will be inserted here -->
+                        </select>
+                    </div>
+                    <table class="w-full text-left">
+                        <thead>
+                            <tr class="border-b dark:border-gray-700">
+                                <th class="p-2">学生</th>
+                                <th class="p-2">类型</th>
+                                <th class="p-2">积分</th>
+                                <th class="p-2">时间</th>
+                                <th class="p-2">备注</th>
+                                <th class="p-2">操作</th>
+                            </tr>
+                        </thead>
+                        <tbody id="scores-table-body">
+                            <!-- Score rows will be inserted here -->
+                        </tbody>
+                    </table>
+                </div>
+                <div class="card p-6">
+                    <h3 class="text-xl font-bold mb-4">添加积分</h3>
+                    <form id="add-score-form" class="space-y-4">
+                        <div>
+                            <label for="score-student" class="block mb-2">学生</label>
+                            <select id="score-student" class="w-full border rounded-lg px-4 py-2 bg-transparent" required>
+                                <!-- Students will be inserted here -->
+                            </select>
+                        </div>
+                        <div>
+                            <label for="score-type" class="block mb-2">积分类型</label>
+                            <select id="score-type" class="w-full border rounded-lg px-4 py-2 bg-transparent" required>
+                                <!-- Score types will be inserted here -->
+                            </select>
+                        </div>
+                        <div>
+                            <label for="score-value" class="block mb-2">积分值</label>
+                            <input type="number" id="score-value" class="w-full border rounded-lg px-4 py-2 bg-transparent" required>
+                        </div>
+                        <div>
+                            <label for="score-note" class="block mb-2">备注</label>
+                            <textarea id="score-note" rows="3" class="w-full border rounded-lg px-4 py-2 bg-transparent"></textarea>
+                        </div>
+                        <button type="submit" class="btn-primary w-full px-4 py-2 rounded-lg">添加</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <!-- Statistics Page -->
+        <div id="statistics-page" class="page hidden">
+            <h2 class="text-3xl font-bold mb-6">积分统计</h2>
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <div class="card p-6">
+                    <h3 class="text-xl font-bold mb-4">学生积分排行</h3>
+                    <canvas id="student-ranking-chart"></canvas>
+                </div>
+                <div class="card p-6">
+                    <h3 class="text-xl font-bold mb-4">积分类型占比</h3>
+                    <canvas id="score-distribution-chart"></canvas>
+                </div>
+                <div class="card p-6">
+                    <h3 class="text-xl font-bold mb-4">月度积分趋势</h3>
+                    <canvas id="monthly-trend-chart"></canvas>
+                </div>
+                <div class="card p-6">
+                    <h3 class="text-xl font-bold mb-4">积分明细</h3>
+                    <div id="statistics-detail" class="space-y-4">
+                        <!-- Detail will be inserted here -->
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Settings Page -->
+        <div id="settings-page" class="page hidden">
+            <h2 class="text-3xl font-bold mb-6">系统设置</h2>
+            <div class="card p-6">
+                <h3 class="text-xl font-bold mb-4">积分类型管理</h3>
+                <div class="flex justify-between items-center mb-4">
+                    <div class="flex items-center space-x-2">
+                        <input type="text" id="new-score-type-name" placeholder="积分类型名称" class="border rounded-lg px-4 py-2 bg-transparent">
+                        <input type="number" id="new-score-type-value" placeholder="积分值" class="border rounded-lg px-4 py-2 bg-transparent" style="width: 120px;">
+                    </div>
+                    <button id="add-score-type-btn" class="btn-primary px-4 py-2 rounded-lg">添加</button>
+                </div>
+                <table class="w-full text-left">
+                    <thead>
+                        <tr class="border-b dark:border-gray-700">
+                            <th class="p-2">类型</th>
+                            <th class="p-2">积分值</th>
+                            <th class="p-2">操作</th>
+                        </tr>
+                    </thead>
+                    <tbody id="score-types-table-body">
+                        <!-- Score type rows will be inserted here -->
+                    </tbody>
+                </table>
+            </div>
+            <div class="card p-6 mt-6">
+                <h3 class="text-xl font-bold mb-4">数据管理</h3>
+                <div class="flex space-x-4">
+                    <button id="export-data-btn" class="btn-primary px-4 py-2 rounded-lg flex items-center space-x-2">
+                        <i data-lucide="download"></i>
+                        <span>导出数据</span>
+                    </button>
+                    <button id="import-data-btn" class="btn-primary px-4 py-2 rounded-lg flex items-center space-x-2">
+                        <i data-lucide="upload"></i>
+                        <span>导入数据</span>
+                    </button>
+                    <input type="file" id="import-data-input" accept=".json" class="hidden">
+                    <button id="clear-data-btn" class="bg-red-500 text-white px-4 py-2 rounded-lg flex items-center space-x-2">
+                        <i data-lucide="trash-2"></i>
+                        <span>清空数据</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- Modals -->
+    <div id="add-student-modal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center hidden">
+        <div class="card p-8 rounded-lg w-full max-w-md">
+            <h3 class="text-2xl font-bold mb-4">添加学生</h3>
+            <form id="add-student-form" class="space-y-4">
+                <div>
+                    <label for="student-name" class="block mb-2">姓名</label>
+                    <input type="text" id="student-name" class="w-full border rounded-lg px-4 py-2 bg-transparent" required>
+                </div>
+                <div>
+                    <label for="student-id" class="block mb-2">学号</label>
+                    <input type="text" id="student-id" class="w-full border rounded-lg px-4 py-2 bg-transparent" required>
+                </div>
+                <div class="flex justify-end space-x-4">
+                    <button type="button" id="cancel-add-student" class="px-4 py-2 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-700">取消</button>
+                    <button type="submit" class="btn-primary px-4 py-2 rounded-lg">添加</button>
+                </div>
+            </form>
+        </div>
+    </div>
     
-    // 游戏状态
-    const gameState = {
-      // 核心状态
-      snake: [],
-      food: {},
-      foodType: 'normal',
-      direction: 'RIGHT',
-      nextDirection: 'RIGHT',
-      score: 0,
-      highScore: 0,
-      speed: config.initialSpeed,
-      gameLoop: null,
-      isGameOver: false,
-      isPaused: false,
-      // 画布信息
-      canvas: null,
-      ctx: null,
-      canvasWidth: 0,
-      canvasHeight: 0,
-      gridWidth: 0,
-      gridHeight: 0,
-      // 特效状态
-      activeEffects: {},
-      effectTimers: {},
-      // 挑战系统
-      currentChallenge: null,
-      challengeProgress: 0,
-      // 视觉效果
-      explosions: [],
-      floatingTexts: [],
-      // 皮肤系统
-      skins: [],
-      currentSkin: 0,
-      // 成就系统
-      achievements: [],
-      unlockedAchievements: []
-    };
-    
-    // DOM元素
-    const elements = {
-      canvas: document.getElementById('gameCanvas'),
-      scoreElement: document.getElementById('score'),
-      highScoreElement: document.getElementById('high-score'),
-      finalScoreElement: document.getElementById('final-score'),
-      gameOverHighScoreElement: document.getElementById('game-over-high-score'),
-      startScreen: document.getElementById('start-screen'),
-      gameOverScreen: document.getElementById('game-over-screen'),
-      startButton: document.getElementById('start-button'),
-      restartButton: document.getElementById('restart-button'),
-      shareButton: document.getElementById('share-button'),
-      gameContainer: document.getElementById('game-container'),
-      mobileControls: document.getElementById('mobile-controls'),
-      mobileControlsContainer: document.getElementById('mobile-controls-container'),
-      mainContainer: document.getElementById('main-container'),
-      // 挑战相关
-      challengeText: document.getElementById('challenge-text'),
-      challengeReward: document.getElementById('challenge-reward'),
-      challengeProgress: document.getElementById('challenge-progress'),
-      // 特效容器
-      buffContainer: document.getElementById('buff-container'),
-      floatingScores: document.getElementById('floating-scores'),
-      // 皮肤和成就界面
-      skinSelector: document.getElementById('skin-selector'),
-      skinScreen: document.getElementById('skin-screen'),
-      skinsContainer: document.getElementById('skins-container'),
-      closeSkinButton: document.getElementById('close-skin-button'),
-      achievementsButton: document.getElementById('achievements'),
-      achievementsScreen: document.getElementById('achievements-screen'),
-      achievementsContainer: document.getElementById('achievements-container'),
-      closeAchievementsButton: document.getElementById('close-achievements-button'),
-      // 游戏结束提示
-      levelUpMessage: document.getElementById('level-up-message'),
-      achievementUnlocked: document.getElementById('achievement-unlocked'),
-      achievementName: document.getElementById('achievement-name')
-    };
-    
-    // 初始化游戏
-    function initGame() {
-      // 初始化皮肤系统
-      initSkins();
-      
-      // 初始化成就系统
-      initAchievements();
-      
-      // 加载本地存储数据
-      loadGameData();
-      
-      // 设置画布
-      setupCanvas();
-      
-      // 添加事件监听器
-      addEventListeners();
-      
-      // 初始化游戏状态
-      resetGameState();
-      
-      // 监听窗口大小变化
-      window.addEventListener('resize', handleResize);
-      
-      // 调整移动设备UI
-      adjustUIForMobile();
-      
-      // 渲染皮肤选择界面
-      renderSkinSelection();
-      
-      // 渲染成就界面
-      renderAchievements();
-    }
-    
-    // 初始化皮肤系统
-    function initSkins() {
-      gameState.skins = [
-        {
-          id: 'classic',
-          name: '经典蛇',
-          unlocked: true,
-          colors: ['#0EFF37', '#0BCD32', '#0AA827'],
-          effect: null
-        },
-        {
-          id: 'rainbow',
-          name: '彩虹蛇',
-          unlocked: false,
-          colors: ['#FF3E3E', '#FF6F00', '#D5FF3B', '#46ED4D', '#3FAAFF', '#AC53FF'],
-          effect: 'colorful'
-        },
-        {
-          id: 'dark',
-          name: '暗影蛇',
-          unlocked: false,
-          colors: ['#444444', '#333333', '#222222'],
-          effect: 'shadow'
-        },
-        {
-          id: 'gold',
-          name: '黄金蛇',
-          unlocked: false,
-          colors: ['#FFD700', '#FFC107', '#FFA000'],
-          effect: 'glow'
-        },
-        {
-          id: 'pixel',
-          name: '像素蛇',
-          unlocked: false,
-          colors: ['#FFFFFF', '#CCCCCC', '#999999'],
-          effect: 'pixel'
-        }
-      ];
-    }
-    
-    // 初始化成就系统
-    function initAchievements() {
-      gameState.achievements = [
-        {
-          id: 'first_blood',
-          name: '初尝胜果',
-          description: '首次得分达到100分',
-          condition: (score) => score >= 100,
-          unlocked: false,
-          icon: 'fa-star'
-        },
-        {
-          id: 'snake_master',
-          name: '蛇王',
-          description: '得分达到500分',
-          condition: (score) => score >= 500,
-          unlocked: false,
-          icon: 'fa-crown'
-        },
-        {
-          id: 'food_hunter',
-          name: '食物猎人',
-          description: '吃到10个特殊食物',
-          condition: (specialCount) => specialCount >= 10,
-          unlocked: false,
-          icon: 'fa-cutlery'
-        },
-        {
-          id: 'rainbow_lover',
-          name: '彩虹爱好者',
-          description: '吃到5个彩虹食物',
-          condition: (rainbowCount) => rainbowCount >= 5,
-          unlocked: false,
-          icon: 'fa-sun-o'
-        },
-        {
-          id: 'challenger',
-          name: '挑战者',
-          description: '完成5个挑战任务',
-          condition: (challengeCount) => challengeCount >= 5,
-          unlocked: false,
-          icon: 'fa-flag-checkered'
-        }
-      ];
-    }
-    
-    // 加载本地存储数据
-    function loadGameData() {
-      const savedData = localStorage.getItem('snakeGameData');
-      if (savedData) {
-        const data = JSON.parse(savedData);
-        gameState.highScore = data.highScore || 0;
-        gameState.unlockedAchievements = data.unlockedAchievements || [];
-        
-        // 更新成就解锁状态
-        gameState.achievements.forEach(achievement => {
-          achievement.unlocked = gameState.unlockedAchievements.includes(achievement.id);
-        });
-        
-        // 解锁皮肤（根据成就）
-        if (gameState.unlockedAchievements.includes('first_blood')) {
-          gameState.skins[1].unlocked = true; // 解锁彩虹蛇
-        }
-        if (gameState.unlockedAchievements.includes('snake_master')) {
-          gameState.skins[2].unlocked = true; // 解锁暗影蛇
-        }
-        
-        // 更新UI显示
-        elements.highScoreElement.textContent = gameState.highScore;
-      }
-    }
-    
-    // 保存游戏数据到本地存储
-    function saveGameData() {
-      const data = {
-        highScore: gameState.highScore,
-        unlockedAchievements: gameState.unlockedAchievements
-      };
-      localStorage.setItem('snakeGameData', JSON.stringify(data));
-    }
-    
-    // 渲染皮肤选择界面
-    function renderSkinSelection() {
-      elements.skinsContainer.innerHTML = '';
-      
-      gameState.skins.forEach((skin, index) => {
-        const skinElement = document.createElement('div');
-        skinElement.className = `flex flex-col items-center p-3 rounded ${skin.unlocked ? 'bg-gray-800' : 'bg-gray-900/50 opacity-50'}`;
-        
-        // 皮肤预览
-        const previewContainer = document.createElement('div');
-        previewContainer.className = 'w-16 h-10 mb-2 flex';
-        
-        // 创建蛇预览
-        for (let i = 0; i < 3; i++) {
-          const segment = document.createElement('div');
-          const colorIndex = i % skin.colors.length;
-          segment.className = 'w-1/3 h-full border border-black/30';
-          segment.style.backgroundColor = skin.colors[colorIndex];
-          previewContainer.appendChild(segment);
-        }
-        
-        // 皮肤名称
-        const nameElement = document.createElement('span');
-        nameElement.className = `pixel-text text-sm ${gameState.currentSkin === index ? 'text-accent' : ''}`;
-        nameElement.textContent = skin.name;
-        
-        // 锁定图标
-        if (!skin.unlocked) {
-          const lockIcon = document.createElement('i');
-          lockIcon.className = 'fa fa-lock absolute mt-6 text-gray-500';
-          previewContainer.style.position = 'relative';
-          previewContainer.appendChild(lockIcon);
-        }
-        
-        skinElement.appendChild(previewContainer);
-        skinElement.appendChild(nameElement);
-        
-        // 点击事件（仅解锁的皮肤）
-        if (skin.unlocked) {
-          skinElement.addEventListener('click', () => {
-            gameState.currentSkin = index;
-            renderSkinSelection(); // 更新选中状态
-          });
-          skinElement.style.cursor = 'pointer';
-        }
-        
-        elements.skinsContainer.appendChild(skinElement);
-      });
-    }
-    
-    // 渲染成就界面
-    function renderAchievements() {
-      elements.achievementsContainer.innerHTML = '';
-      
-      gameState.achievements.forEach(achievement => {
-        const achievementElement = document.createElement('div');
-        achievementElement.className = `p-3 rounded flex items-center gap-3 ${achievement.unlocked ? 'bg-gray-800' : 'bg-gray-900/50'}`;
-        
-        // 成就图标
-        const iconElement = document.createElement('div');
-        iconElement.className = `w-10 h-10 rounded-full flex items-center justify-center ${achievement.unlocked ? 'bg-accent text-dark' : 'bg-gray-700 text-gray-500'}`;
-        iconElement.innerHTML = `<i class="fa ${achievement.icon}"></i>`;
-        
-        // 成就信息
-        const infoElement = document.createElement('div');
-        infoElement.className = 'flex-1';
-        
-        const nameElement = document.createElement('div');
-        nameElement.className = `pixel-text ${achievement.unlocked ? '' : 'text-gray-500'}`;
-        nameElement.textContent = achievement.name;
-        
-        const descElement = document.createElement('div');
-        descElement.className = 'text-xs text-gray-400 mt-1';
-        descElement.textContent = achievement.description;
-        
-        infoElement.appendChild(nameElement);
-        infoElement.appendChild(descElement);
-        
-        achievementElement.appendChild(iconElement);
-        achievementElement.appendChild(infoElement);
-        
-        elements.achievementsContainer.appendChild(achievementElement);
-      });
-    }
-    
-    // 检查成就解锁
-    function checkAchievements(statUpdates) {
-      const newlyUnlocked = [];
-      
-      gameState.achievements.forEach(achievement => {
-        if (!achievement.unlocked && achievement.condition(
-          statUpdates.score || gameState.score,
-          statUpdates.specialCount || 0,
-          statUpdates.rainbowCount || 0,
-          statUpdates.challengeCount || 0
-        )) {
-          achievement.unlocked = true;
-          gameState.unlockedAchievements.push(achievement.id);
-          newlyUnlocked.push(achievement);
-        }
-      });
-      
-      // 保存数据
-      if (newlyUnlocked.length > 0) {
-        saveGameData();
-        renderAchievements();
-      }
-      
-      return newlyUnlocked;
-    }
-    
-    // 检查皮肤解锁
-    function checkSkinUnlocks() {
-      let unlockedNewSkin = false;
-      
-      // 彩虹蛇：首次得分100
-      if (!gameState.skins[1].unlocked && gameState.score >= 100) {
-        gameState.skins[1].unlocked = true;
-        unlockedNewSkin = true;
-      }
-      
-      // 暗影蛇：得分500
-      if (!gameState.skins[2].unlocked && gameState.score >= 500) {
-        gameState.skins[2].unlocked = true;
-        unlockedNewSkin = true;
-      }
-      
-      // 黄金蛇：解锁3个成就
-      if (!gameState.skins[3].unlocked && gameState.unlockedAchievements.length >= 3) {
-        gameState.skins[3].unlocked = true;
-        unlockedNewSkin = true;
-      }
-      
-      // 像素蛇：达到最高纪录
-      if (!gameState.skins[4].unlocked && gameState.score >= gameState.highScore) {
-        gameState.skins[4].unlocked = true;
-        unlockedNewSkin = true;
-      }
-      
-      if (unlockedNewSkin) {
-        renderSkinSelection();
-      }
-      
-      return unlockedNewSkin;
-    }
-    
-    // 生成随机挑战
-    function generateRandomChallenge() {
-      const challenges = [
-        { 
-          id: 'eat_food', 
-          text: '吃5个食物', 
-          target: 5, 
-          reward: 50,
-          progressType: 'food'
-        },
-        { 
-          id: 'special_food', 
-          text: '吃2个特殊食物', 
-          target: 2, 
-          reward: 80,
-          progressType: 'special'
-        },
-        { 
-          id: 'length', 
-          text: '让蛇身长到15节', 
-          target: 15, 
-          reward: 100,
-          progressType: 'length'
-        },
-        { 
-          id: 'survive', 
-          text: '存活30秒', 
-          target: 30, 
-          reward: 70,
-          progressType: 'time'
-        }
-      ];
-      
-      // 随机选择一个挑战
-      const challenge = challenges[Math.floor(Math.random() * challenges.length)];
-      gameState.currentChallenge = challenge;
-      gameState.challengeProgress = 0;
-      
-      // 更新UI
-      elements.challengeText.textContent = challenge.text;
-      elements.challengeReward.textContent = `+${challenge.reward}分`;
-      elements.challengeProgress.style.width = '0%';
-      
-      return challenge;
-    }
-    
-    // 更新挑战进度
-    function updateChallengeProgress(type, value = 1) {
-      if (!gameState.currentChallenge) return false;
-      
-      // 检查是否是当前挑战需要的进度类型
-      if (gameState.currentChallenge.progressType !== type) return false;
-      
-      // 特殊处理时间挑战
-      if (type === 'time') {
-        gameState.challengeProgress += value;
-      } else {
-        gameState.challengeProgress += value;
-      }
-      
-      // 限制进度不超过目标
-      if (gameState.challengeProgress >= gameState.currentChallenge.target) {
-        gameState.challengeProgress = gameState.currentChallenge.target;
-      }
-      
-      // 更新UI
-      const progressPercent = (gameState.challengeProgress / gameState.currentChallenge.target) * 100;
-      elements.challengeProgress.style.width = `${progressPercent}%`;
-      
-      // 检查是否完成挑战
-      if (gameState.challengeProgress >= gameState.currentChallenge.target) {
-        completeChallenge();
-        return true;
-      }
-      
-      return false;
-    }
-    
-    // 完成挑战
-    function completeChallenge() {
-      if (!gameState.currentChallenge) return;
-      
-      // 增加分数
-      const reward = gameState.currentChallenge.reward;
-      gameState.score += reward;
-      updateScore();
-      
-      // 显示奖励动画
-      showFloatingText(
-        gameState.canvasWidth / 2, 
-        gameState.canvasHeight / 4, 
-        `+${reward}`, 
-        'text-yellow-400',
-        1.5
-      );
-      
-      // 记录挑战完成次数（用于成就）
-      const challengeCount = (gameState.statistics?.challengeCount || 0) + 1;
-      gameState.statistics = gameState.statistics || {};
-      gameState.statistics.challengeCount = challengeCount;
-      
-      // 检查成就
-      checkAchievements({ challengeCount });
-      
-      // 生成新挑战
-      generateRandomChallenge();
-    }
-    
-    // 处理窗口大小变化
-    function handleResize() {
-      if (!gameState.gameLoop) {
-        setupCanvas();
-        drawGame();
-      }
-      adjustUIForMobile();
-    }
-    
-    // 设置画布
-    function setupCanvas() {
-      gameState.canvas = elements.canvas;
-      gameState.ctx = gameState.canvas.getContext('2d');
-      
-      const containerRect = elements.gameContainer.getBoundingClientRect();
-      const aspectRatio = 25 / 18;
-      let maxWidth = containerRect.width;
-      let maxHeight = containerRect.height;
-      
-      // 保持比例
-      if (maxWidth / maxHeight > aspectRatio) {
-        gameState.canvasHeight = maxHeight;
-        gameState.canvasWidth = gameState.canvasHeight * aspectRatio;
-      } else {
-        gameState.canvasWidth = maxWidth;
-        gameState.canvasHeight = gameState.canvasWidth / aspectRatio;
-      }
-      
-      // 确保尺寸是网格大小的倍数
-      gameState.canvasWidth = Math.floor(gameState.canvasWidth / config.gridSize) * config.gridSize;
-      gameState.canvasHeight = Math.floor(gameState.canvasHeight / config.gridSize) * config.gridSize;
-      
-      // 设置画布尺寸
-      gameState.canvas.width = gameState.canvasWidth;
-      gameState.canvas.height = gameState.canvasHeight;
-      
-      // 计算网格数量
-      gameState.gridWidth = Math.floor(gameState.canvas.width / config.gridSize);
-      gameState.gridHeight = Math.floor(gameState.canvas.height / config.gridSize);
-    }
-    
-    // 调整移动设备UI
-    function adjustUIForMobile() {
-      const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
-      if (isMobile) {
-        const viewportHeight = window.innerHeight;
-        const safeBottomMargin = Math.max(80, viewportHeight * 0.15);
-        elements.mobileControlsContainer.style.marginBottom = `${safeBottomMargin}px`;
-        elements.mainContainer.style.paddingBottom = `${safeBottomMargin}px`;
-      }
-    }
-    
-    // 添加事件监听器
-    function addEventListeners() {
-      // 键盘控制
-      document.addEventListener('keydown', handleKeyDown);
-      
-      // 开始和重新开始按钮
-      elements.startButton.addEventListener('click', startGame);
-      elements.restartButton.addEventListener('click', restartGame);
-      
-      // 分享按钮
-      elements.shareButton.addEventListener('click', shareScore);
-      
-      // 皮肤和成就按钮
-      elements.skinSelector.addEventListener('click', () => {
-        elements.skinScreen.classList.remove('hidden');
-        if (!gameState.isGameOver) pauseGame();
-      });
-      
-      elements.closeSkinButton.addEventListener('click', () => {
-        elements.skinScreen.classList.add('hidden');
-        if (!gameState.isGameOver && gameState.isPaused) resumeGame();
-      });
-      
-      elements.achievementsButton.addEventListener('click', () => {
-        elements.achievementsScreen.classList.remove('hidden');
-        if (!gameState.isGameOver) pauseGame();
-      });
-      
-      elements.closeAchievementsButton.addEventListener('click', () => {
-        elements.achievementsScreen.classList.add('hidden');
-        if (!gameState.isGameOver && gameState.isPaused) resumeGame();
-      });
-      
-      // 移动端控制按钮
-      const mobileButtons = [
-        { id: 'up-button', direction: 'UP' },
-        { id: 'down-button', direction: 'DOWN' },
-        { id: 'left-button', direction: 'LEFT' },
-        { id: 'right-button', direction: 'RIGHT' }
-      ];
-      
-      mobileButtons.forEach(({ id, direction }) => {
-        const button = document.getElementById(id);
-        button.addEventListener('click', () => changeDirection(direction));
-        
-        // 触摸事件
-        button.addEventListener('touchstart', (e) => {
-          e.preventDefault();
-          changeDirection(direction);
-          button.classList.add('scale-95');
-        });
-        
-        button.addEventListener('touchend', () => {
-          button.classList.remove('scale-95');
-        });
-      });
-      
-      // 阻止页面滑动
-      document.addEventListener('touchmove', (e) => e.preventDefault(), { passive: false });
-    }
-    
-    // 处理键盘事件
-    function handleKeyDown(event) {
-      if (gameState.isGameOver) return;
-      
-      switch (event.key) {
-        case 'ArrowUp':
-          changeDirection('UP');
-          break;
-        case 'ArrowDown':
-          changeDirection('DOWN');
-          break;
-        case 'ArrowLeft':
-          changeDirection('LEFT');
-          break;
-        case 'ArrowRight':
-          changeDirection('RIGHT');
-          break;
-        case ' ': // 空格暂停
-          togglePause();
-          break;
-      }
-    }
-    
-    // 改变方向
-    function changeDirection(newDirection) {
-      const oppositeDirections = {
-        'UP': 'DOWN',
-        'DOWN': 'UP',
-        'LEFT': 'RIGHT',
-        'RIGHT': 'LEFT'
-      };
-      
-      if (newDirection !== oppositeDirections[gameState.direction]) {
-        gameState.nextDirection = newDirection;
-      }
-    }
-    
-    // 重置游戏状态
-    function resetGameState() {
-      // 初始化蛇
-      const centerX = Math.floor(gameState.gridWidth / 2);
-      const centerY = Math.floor(gameState.gridHeight / 2);
-      
-      gameState.snake = [
-        { x: centerX, y: centerY },
-        { x: centerX - 1, y: centerY },
-        { x: centerX - 2, y: centerY }
-      ];
-      
-      // 初始方向
-      gameState.direction = 'RIGHT';
-      gameState.nextDirection = 'RIGHT';
-      
-      // 分数和速度
-      gameState.score = 0;
-      gameState.speed = config.initialSpeed;
-      
-      // 生成食物和挑战
-      generateFood();
-      generateRandomChallenge();
-      
-      // 重置状态
-      gameState.isGameOver = false;
-      gameState.isPaused = false;
-      gameState.activeEffects = {};
-      gameState.explosions = [];
-      gameState.floatingTexts = [];
-      gameState.statistics = {
-        specialFoodCount: 0,
-        rainbowFoodCount: 0,
-        challengeCount: 0,
-        gameStartTime: Date.now()
-      };
-      
-      // 清除所有计时器
-      Object.values(gameState.effectTimers).forEach(timer => clearTimeout(timer));
-      gameState.effectTimers = {};
-      
-      // 清空buff显示
-      elements.buffContainer.innerHTML = '';
-      elements.buffContainer.classList.add('hidden');
-      
-      // 更新分数显示
-      updateScore();
-      
-      // 绘制游戏
-      drawGame();
-    }
-    
-    // 生成食物（包括特殊食物）
-    function generateFood() {
-      // 根据概率决定食物类型
-      const rand = Math.random() * 100;
-      let foodType = 'normal';
-      
-      if (rand < config.specialFoodRates.double) {
-        foodType = 'double';
-      } else if (rand < config.specialFoodRates.double + config.specialFoodRates.slow) {
-        foodType = 'slow';
-      } else if (rand < config.specialFoodRates.double + config.specialFoodRates.slow + config.specialFoodRates.split) {
-        foodType = 'split';
-      } else if (rand < config.specialFoodRates.double + config.specialFoodRates.slow + config.specialFoodRates.split + config.specialFoodRates.rainbow) {
-        foodType = 'rainbow';
-      }
-      
-      // 确保食物不与蛇身重叠
-      let newFood;
-      do {
-        newFood = {
-          x: Math.floor(Math.random() * gameState.gridWidth),
-          y: Math.floor(Math.random() * gameState.gridHeight)
-        };
-      } while (gameState.snake.some(segment => segment.x === newFood.x && segment.y === newFood.y));
-      
-      gameState.food = newFood;
-      gameState.foodType = foodType;
-    }
-    
-    // 开始游戏
-    function startGame() {
-      elements.startScreen.classList.add('hidden');
-      resetGameState();
-      gameLoop();
-    }
-    
-    // 重新开始游戏
-    function restartGame() {
-      elements.gameOverScreen.classList.add('hidden');
-      elements.levelUpMessage.classList.add('hidden');
-      elements.achievementUnlocked.classList.add('hidden');
-      startGame();
-    }
-    
-    // 暂停游戏
-    function pauseGame() {
-      if (gameState.isGameOver) return;
-      
-      gameState.isPaused = true;
-      clearTimeout(gameState.gameLoop);
-      drawGame(); // 重绘以显示暂停状态
-    }
-    
-    // 恢复游戏
-    function resumeGame() {
-      if (gameState.isGameOver || !gameState.isPaused) return;
-      
-      gameState.isPaused = false;
-      gameLoop();
-    }
-    
-    // 切换暂停/继续
-    function togglePause() {
-      if (gameState.isPaused) {
-        resumeGame();
-      } else {
-        pauseGame();
-      }
-    }
-    
-    // 游戏主循环
-    function gameLoop() {
-      if (gameState.isGameOver || gameState.isPaused) return;
-      
-      // 更新游戏状态
-      updateGame();
-      
-      // 绘制游戏
-      drawGame();
-      
-      // 更新时间挑战进度
-      const gameTime = Math.floor((Date.now() - gameState.statistics.gameStartTime) / 1000);
-      updateChallengeProgress('time', 0); // 仅检查，不增加值
-      
-      // 设置下一次循环
-      gameState.gameLoop = setTimeout(gameLoop, gameState.speed);
-    }
-    
-    // 更新游戏状态
-    function updateGame() {
-      // 更新方向
-      gameState.direction = gameState.nextDirection;
-      
-      // 计算新的蛇头位置
-      const head = { ...gameState.snake[0] };
-      
-      switch (gameState.direction) {
-        case 'UP':
-          head.y -= 1;
-          break;
-        case 'DOWN':
-          head.y += 1;
-          break;
-        case 'LEFT':
-          head.x -= 1;
-          break;
-        case 'RIGHT':
-          head.x += 1;
-          break;
-      }
-      
-      // 检查碰撞
-      if (checkCollision(head)) {
-        endGame();
-        return;
-      }
-      
-      // 将新蛇头添加到蛇的前面
-      gameState.snake.unshift(head);
-      
-      // 检查是否吃到食物
-      if (head.x === gameState.food.x && head.y === gameState.food.y) {
-        // 处理不同类型食物
-        handleFoodConsumption(head);
-        
-        // 更新挑战进度（食物计数）
-        updateChallengeProgress('food');
-        updateChallengeProgress('length', gameState.snake.length);
-        
-        // 生成新的食物
-        generateFood();
-      } else {
-        // 移除蛇尾
-        gameState.snake.pop();
-      }
-      
-      // 更新爆炸效果
-      updateExplosions();
-      
-      // 更新漂浮文字
-      updateFloatingTexts();
-    }
-    
-    // 处理食物消耗
-    function handleFoodConsumption(position) {
-      const basePoints = 10;
-      let points = basePoints;
-      
-      // 检查是否有彩虹效果加成
-      if (gameState.activeEffects.rainbow) {
-        points += 5;
-      }
-      
-      // 处理不同类型食物
-      switch (gameState.foodType) {
-        case 'normal':
-          // 普通食物
-          gameState.score += points;
-          showFloatingText(position.x, position.y, `+${points}`);
-          break;
-          
-        case 'double':
-          // 双倍分食物
-          points *= 2;
-          gameState.score += points;
-          showFloatingText(position.x, position.y, `+${points}`, 'text-yellow-400', 1.2);
-          addExplosion(position.x, position.y, 'gold');
-          // 统计特殊食物
-          gameState.statistics.specialFoodCount++;
-          updateChallengeProgress('special');
-          break;
-          
-        case 'slow':
-          // 减速食物
-          gameState.score += points;
-          showFloatingText(position.x, position.y, `+${points}`, 'text-blue-400');
-          // 激活减速效果
-          activateEffect('slow', config.effectDurations.slow);
-          addExplosion(position.x, position.y, 'blue');
-          // 统计特殊食物
-          gameState.statistics.specialFoodCount++;
-          updateChallengeProgress('special');
-          break;
-          
-        case 'split':
-          // 分身食物
-          gameState.score += points;
-          showFloatingText(position.x, position.y, `+${points}`, 'text-purple-400');
-          // 增加两节蛇身（不增加长度压力）
-          const lastSegment = gameState.snake[gameState.snake.length - 1];
-          gameState.snake.push({ ...lastSegment }, { ...lastSegment });
-          addExplosion(position.x, position.y, 'purple');
-          // 统计特殊食物
-          gameState.statistics.specialFoodCount++;
-          updateChallengeProgress('special');
-          break;
-          
-        case 'rainbow':
-          // 彩虹食物
-          gameState.score += points;
-          showFloatingText(position.x, position.y, `+${points}`, 'text-red-400');
-          // 激活彩虹效果
-          activateEffect('rainbow', config.effectDurations.rainbow);
-          addExplosion(position.x, position.y, 'rainbow');
-          // 统计特殊食物和彩虹食物
-          gameState.statistics.specialFoodCount++;
-          gameState.statistics.rainbowFoodCount++;
-          updateChallengeProgress('special');
-          // 检查成就
-          checkAchievements({ 
-            specialCount: gameState.statistics.specialFoodCount,
-            rainbowCount: gameState.statistics.rainbowFoodCount
-          });
-          break;
-      }
-      
-      // 更新分数
-      updateScore();
-      
-      // 增加速度（如果还没到最小速度）
-      if (gameState.speed > config.minSpeed && gameState.foodType !== 'slow') {
-        gameState.speed -= config.speedIncrease;
-      }
-      
-      // 检查成就
-      checkAchievements({ score: gameState.score });
-    }
-    
-    // 激活特效
-    function activateEffect(effectType, duration) {
-      // 记录特效激活
-      gameState.activeEffects[effectType] = true;
-      
-      // 特效具体处理
-      switch (effectType) {
-        case 'slow':
-          // 保存原始速度
-          gameState.originalSpeed = gameState.speed;
-          // 减速30%
-          gameState.speed = Math.floor(gameState.speed * 1.3);
-          // 添加buff图标
-          addBuffIcon('slow', 'fa-snail', 'text-blue-400', duration);
-          break;
-          
-        case 'rainbow':
-          // 添加buff图标
-          addBuffIcon('rainbow', 'fa-sun-o', 'text-yellow-500', duration);
-          break;
-      }
-      
-      // 设置特效结束计时器
-      if (gameState.effectTimers[effectType]) {
-        clearTimeout(gameState.effectTimers[effectType]);
-      }
-      
-      gameState.effectTimers[effectType] = setTimeout(() => {
-        deactivateEffect(effectType);
-      }, duration);
-    }
-    
-    // 解除特效
-    function deactivateEffect(effectType) {
-      // 移除特效
-      delete gameState.activeEffects[effectType];
-      
-      // 特效具体处理
-      switch (effectType) {
-        case 'slow':
-          // 恢复原始速度
-          if (gameState.originalSpeed) {
-            gameState.speed = gameState.originalSpeed;
-            delete gameState.originalSpeed;
-          }
-          break;
-      }
-      
-      // 移除buff图标
-      removeBuffIcon(effectType);
-      
-      // 清除计时器
-      delete gameState.effectTimers[effectType];
-    }
-    
-    // 添加buff图标
-    function addBuffIcon(effectType, iconClass, colorClass, duration) {
-      // 显示buff容器
-      elements.buffContainer.classList.remove('hidden');
-      
-      // 创建buff元素
-      const buffElement = document.createElement('div');
-      buffElement.id = `buff-${effectType}`;
-      buffElement.className = `flex items-center gap-1 px-2 py-1 bg-black/50 rounded text-sm`;
-      
-      // 图标
-      const iconElement = document.createElement('i');
-      iconElement.className = `fa ${iconClass} ${colorClass}`;
-      
-      // 计时器
-      const timerElement = document.createElement('span');
-      timerElement.className = `text-xs ${colorClass}`;
-      timerElement.textContent = `${duration / 1000}s`;
-      
-      buffElement.appendChild(iconElement);
-      buffElement.appendChild(timerElement);
-      elements.buffContainer.appendChild(buffElement);
-      
-      // 更新计时器显示
-      let timeLeft = duration / 1000;
-      const timer = setInterval(() => {
-        timeLeft--;
-        if (timerElement.parentNode) {
-          timerElement.textContent = `${timeLeft}s`;
-        }
-        
-        if (timeLeft <= 0 || !gameState.activeEffects[effectType]) {
-          clearInterval(timer);
-        }
-      }, 1000);
-    }
-    
-    // 移除buff图标
-    function removeBuffIcon(effectType) {
-      const buffElement = document.getElementById(`buff-${effectType}`);
-      if (buffElement) {
-        buffElement.remove();
-      }
-      
-      // 如果没有buff了，隐藏容器
-      if (elements.buffContainer.children.length === 0) {
-        elements.buffContainer.classList.add('hidden');
-      }
-    }
-    
-    // 检查碰撞
-    function checkCollision(head) {
-      // 检查边界碰撞
-      if (
-        head.x < 0 || 
-        head.x >= gameState.gridWidth || 
-        head.y < 0 || 
-        head.y >= gameState.gridHeight
-      ) {
-        return true;
-      }
-      
-      // 检查自身碰撞
-      for (let i = 1; i < gameState.snake.length; i++) {
-        if (head.x === gameState.snake[i].x && head.y === gameState.snake[i].y) {
-          return true;
-        }
-      }
-      
-      return false;
-    }
-    
-    // 添加爆炸效果
-    function addExplosion(x, y, type = 'default') {
-      const explosion = {
-        x,
-        y,
-        frame: 0,
-        maxFrames: 12,
-        pixelSize: config.gridSize / 6,
-        type: type,
-        pixels: []
-      };
-      
-      // 生成爆炸像素
-      const gridSize = 5; // 5x5像素矩阵
-      const offset = Math.floor(gridSize / 2);
-      
-      for (let dy = -offset; dy <= offset; dy++) {
-        for (let dx = -offset; dx <= offset; dx++) {
-          // 距离中心越远的像素越有可能不显示
-          const distance = Math.sqrt(dx * dx + dy * dy);
-          const chance = 0.8 - (distance / 4); // 中心像素显示概率高
-          
-          if (Math.random() < chance) {
-            explosion.pixels.push({
-              dx,
-              dy,
-              opacity: 1,
-              size: 1 + Math.random() * 0.5 // 随机大小
+    <div id="edit-score-modal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center hidden">
+        <div class="card p-8 rounded-lg w-full max-w-md">
+            <h3 class="text-2xl font-bold mb-4">编辑积分记录</h3>
+            <form id="edit-score-form" class="space-y-4">
+                <input type="hidden" id="edit-score-id">
+                <div>
+                    <label for="edit-score-student" class="block mb-2">学生</label>
+                    <select id="edit-score-student" class="w-full border rounded-lg px-4 py-2 bg-transparent" required>
+                        <!-- Students will be inserted here -->
+                    </select>
+                </div>
+                <div>
+                    <label for="edit-score-type" class="block mb-2">积分类型</label>
+                    <select id="edit-score-type" class="w-full border rounded-lg px-4 py-2 bg-transparent" required>
+                        <!-- Score types will be inserted here -->
+                    </select>
+                </div>
+                <div>
+                    <label for="edit-score-value" class="block mb-2">积分值</label>
+                    <input type="number" id="edit-score-value" class="w-full border rounded-lg px-4 py-2 bg-transparent" required>
+                </div>
+                <div>
+                    <label for="edit-score-note" class="block mb-2">备注</label>
+                    <textarea id="edit-score-note" rows="3" class="w-full border rounded-lg px-4 py-2 bg-transparent"></textarea>
+                </div>
+                <div class="flex justify-end space-x-4">
+                    <button type="button" id="cancel-edit-score" class="px-4 py-2 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-700">取消</button>
+                    <button type="submit" class="btn-primary px-4 py-2 rounded-lg">保存</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+
+    <div id="toast" class="toast"></div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            lucide.createIcons();
+
+            // --- Data Management ---
+            let students = JSON.parse(localStorage.getItem('students')) || [];
+            let scoreRecords = JSON.parse(localStorage.getItem('scoreRecords')) || [];
+            let scoreTypes = JSON.parse(localStorage.getItem('scoreTypes')) || [
+                { id: 1, name: '课堂表现', value: 2 },
+                { id: 2, name: '作业完成', value: 1 },
+                { id: 3, name: '纪律遵守', value: 1 },
+                { id: 4, name: '迟到', value: -1 },
+                { id: 5, name: '作业未完成', value: -2 },
+            ];
+
+            const saveData = () => {
+                localStorage.setItem('students', JSON.stringify(students));
+                localStorage.setItem('scoreRecords', JSON.stringify(scoreRecords));
+                localStorage.setItem('scoreTypes', JSON.stringify(scoreTypes));
+                updateUI();
+            };
+
+            // --- UI Updates ---
+            const updateUI = () => {
+                updateDashboard();
+                updateStudentsTable();
+                updateScoresTable();
+                updateScoreTypeOptions();
+                updateStatistics();
+                updateScoreTypesTable();
+            };
+
+            const showToast = (message) => {
+                const toast = document.getElementById('toast');
+                toast.textContent = message;
+                toast.classList.add('show');
+                setTimeout(() => {
+                    toast.classList.remove('show');
+                }, 3000);
+            };
+
+            // --- Dashboard ---
+            const updateDashboard = () => {
+                document.getElementById('total-students').textContent = students.length;
+                const totalScores = students.reduce((sum, student) => sum + getStudentTotalScore(student.id), 0);
+                document.getElementById('total-scores').textContent = totalScores;
+                
+                const today = new Date();
+                const startOfMonth = new Date(today.getFullYear(), today.getMonth(), 1);
+                const monthlyRecords = scoreRecords.filter(record => new Date(record.timestamp) >= startOfMonth);
+                const monthlyChange = monthlyRecords.reduce((sum, record) => sum + record.value, 0);
+                document.getElementById('monthly-change').textContent = (monthlyChange >= 0 ? '+' : '') + monthlyChange;
+                
+                document.getElementById('score-types').textContent = scoreTypes.length;
+
+                updateTopStudentsChart();
+                updateScoreTypeChart();
+            };
+
+            const updateTopStudentsChart = () => {
+                const topStudents = [...students]
+                    .sort((a, b) => getStudentTotalScore(b.id) - getStudentTotalScore(a.id))
+                    .slice(0, 5);
+
+                const ctx = document.getElementById('top-students-chart').getContext('2d');
+                if (window.topStudentsChart) {
+                    window.topStudentsChart.destroy();
+                }
+                window.topStudentsChart = new Chart(ctx, {
+                    type: 'bar',
+                    data: {
+                        labels: topStudents.map(s => s.name),
+                        datasets: [{
+                            label: '积分',
+                            data: topStudents.map(s => getStudentTotalScore(s.id)),
+                            backgroundColor: 'rgba(79, 70, 229, 0.8)',
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        plugins: {
+                            legend: { display: false },
+                        },
+                        scales: {
+                            y: { beginAtZero: true }
+                        }
+                    }
+                });
+            };
+
+            const updateScoreTypeChart = () => {
+                const typeCounts = {};
+                scoreTypes.forEach(type => typeCounts[type.name] = 0);
+                scoreRecords.forEach(record => {
+                    const type = scoreTypes.find(t => t.id === record.typeId);
+                    if (type) {
+                        typeCounts[type.name]++;
+                    }
+                });
+
+                const ctx = document.getElementById('score-type-chart').getContext('2d');
+                if (window.scoreTypeChart) {
+                    window.scoreTypeChart.destroy();
+                }
+                window.scoreTypeChart = new Chart(ctx, {
+                    type: 'doughnut',
+                    data: {
+                        labels: Object.keys(typeCounts),
+                        datasets: [{
+                            data: Object.values(typeCounts),
+                            backgroundColor: [
+                                '#4F46E5', '#EC4899', '#10B981', '#F59E0B', '#EF4444',
+                                '#8B5CF6', '#06B6D4', '#84CC16', '#F97316', '#6366F1'
+                            ],
+                        }]
+                    },
+                    options: { responsive: true }
+                });
+            };
+
+            // --- Students ---
+            const updateStudentsTable = () => {
+                const tbody = document.getElementById('students-table-body');
+                tbody.innerHTML = '';
+                students.forEach(student => {
+                    const tr = document.createElement('tr');
+                    tr.className = 'border-b dark:border-gray-700';
+                    tr.innerHTML = `
+                        <td class="p-2">${student.id}</td>
+                        <td class="p-2">${student.name}</td>
+                        <td class="p-2">${getStudentTotalScore(student.id)}</td>
+                        <td class="p-2">
+                            <button class="edit-student-btn p-1 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-700" data-id="${student.id}">
+                                <i data-lucide="edit"></i>
+                            </button>
+                            <button class="delete-student-btn p-1 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-700" data-id="${student.id}">
+                                <i data-lucide="trash-2"></i>
+                            </button>
+                        </td>
+                    `;
+                    tbody.appendChild(tr);
+                });
+                lucide.createIcons();
+            };
+
+            const getStudentTotalScore = (studentId) => {
+                return scoreRecords
+                    .filter(record => record.studentId === studentId)
+                    .reduce((sum, record) => sum + record.value, 0);
+            };
+
+            // --- Scores ---
+            const updateScoresTable = () => {
+                const tbody = document.getElementById('scores-table-body');
+                tbody.innerHTML = '';
+                scoreRecords.slice().reverse().forEach(record => {
+                    const student = students.find(s => s.id === record.studentId);
+                    const type = scoreTypes.find(t => t.id === record.typeId);
+                    if (!student || !type) return;
+
+                    const tr = document.createElement('tr');
+                    tr.className = 'border-b dark:border-gray-700';
+                    tr.innerHTML = `
+                        <td class="p-2">${student.name}</td>
+                        <td class="p-2">${type.name}</td>
+                        <td class="p-2 ${record.value > 0 ? 'text-green-500' : 'text-red-500'}">${record.value > 0 ? '+' : ''}${record.value}</td>
+                        <td class="p-2">${new Date(record.timestamp).toLocaleString()}</td>
+                        <td class="p-2">${record.note || '-'}</td>
+                        <td class="p-2">
+                            <button class="edit-score-btn p-1 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-700" data-id="${record.id}">
+                                <i data-lucide="edit"></i>
+                            </button>
+                            <button class="delete-score-btn p-1 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-700" data-id="${record.id}">
+                                <i data-lucide="trash-2"></i>
+                            </button>
+                        </td>
+                    `;
+                    tbody.appendChild(tr);
+                });
+                lucide.createIcons();
+            };
+
+            const updateScoreTypeOptions = () => {
+                const scoreTypeSelects = [
+                    document.getElementById('score-type'),
+                    document.getElementById('score-filter'),
+                    document.getElementById('edit-score-type')
+                ];
+                scoreTypeSelects.forEach(select => {
+                    if (!select) return;
+                    const currentValue = select.value;
+                    select.innerHTML = '';
+                    scoreTypes.forEach(type => {
+                        const option = document.createElement('option');
+                        option.value = type.id;
+                        option.textContent = `${type.name} (${type.value > 0 ? '+' : ''}${type.value})`;
+                        select.appendChild(option);
+                    });
+                    select.value = currentValue;
+                });
+
+                const scoreStudentSelects = [
+                    document.getElementById('score-student'),
+                    document.getElementById('edit-score-student')
+                ];
+                scoreStudentSelects.forEach(select => {
+                    if (!select) return;
+                    const currentValue = select.value;
+                    select.innerHTML = '';
+                    students.forEach(student => {
+                        const option = document.createElement('option');
+                        option.value = student.id;
+                        option.textContent = student.name;
+                        select.appendChild(option);
+                    });
+                    select.value = currentValue;
+                });
+            };
+
+            // --- Statistics ---
+            const updateStatistics = () => {
+                updateStudentRankingChart();
+                updateScoreDistributionChart();
+                updateMonthlyTrendChart();
+                updateStatisticsDetail();
+            };
+
+            const updateStudentRankingChart = () => {
+                const sortedStudents = [...students].sort((a, b) => getStudentTotalScore(b.id) - getStudentTotalScore(a.id));
+
+                const ctx = document.getElementById('student-ranking-chart').getContext('2d');
+                if (window.studentRankingChart) {
+                    window.studentRankingChart.destroy();
+                }
+                window.studentRankingChart = new Chart(ctx, {
+                    type: 'bar',
+                    data: {
+                        labels: sortedStudents.map(s => s.name),
+                        datasets: [{
+                            label: '总积分',
+                            data: sortedStudents.map(s => getStudentTotalScore(s.id)),
+                            backgroundColor: 'rgba(79, 70, 229, 0.8)',
+                        }]
+                    },
+                    options: {
+                        indexAxis: 'y',
+                        responsive: true,
+                        plugins: {
+                            legend: { display: false },
+                        },
+                        scales: {
+                            x: { beginAtZero: true }
+                        }
+                    }
+                });
+            };
+
+            const updateScoreDistributionChart = () => {
+                const typeScores = {};
+                scoreTypes.forEach(type => typeScores[type.id] = { name: type.name, total: 0 });
+                scoreRecords.forEach(record => {
+                    if (typeScores[record.typeId]) {
+                        typeScores[record.typeId].total += record.value;
+                    }
+                });
+
+                const ctx = document.getElementById('score-distribution-chart').getContext('2d');
+                if (window.scoreDistributionChart) {
+                    window.scoreDistributionChart.destroy();
+                }
+                window.scoreDistributionChart = new Chart(ctx, {
+                    type: 'pie',
+                    data: {
+                        labels: Object.values(typeScores).map(t => t.name),
+                        datasets: [{
+                            data: Object.values(typeScores).map(t => Math.abs(t.total)),
+                            backgroundColor: [
+                                '#4F46E5', '#EC4899', '#10B981', '#F59E0B', '#EF4444',
+                                '#8B5CF6', '#06B6D4', '#84CC16', '#F97316', '#6366F1'
+                            ],
+                        }]
+                    },
+                    options: { responsive: true }
+                });
+            };
+
+            const updateMonthlyTrendChart = () => {
+                const monthlyData = {};
+                for (let i = 0; i < 12; i++) {
+                    const date = new Date();
+                    date.setMonth(date.getMonth() - i);
+                    const key = `${date.getFullYear()}-${date.getMonth() + 1}`;
+                    monthlyData[key] = 0;
+                }
+
+                scoreRecords.forEach(record => {
+                    const date = new Date(record.timestamp);
+                    const key = `${date.getFullYear()}-${date.getMonth() + 1}`;
+                    if (monthlyData[key] !== undefined) {
+                        monthlyData[key] += record.value;
+                    }
+                });
+
+                const labels = Object.keys(monthlyData).reverse();
+                const data = Object.values(monthlyData).reverse();
+
+                const ctx = document.getElementById('monthly-trend-chart').getContext('2d');
+                if (window.monthlyTrendChart) {
+                    window.monthlyTrendChart.destroy();
+                }
+                window.monthlyTrendChart = new Chart(ctx, {
+                    type: 'line',
+                    data: {
+                        labels: labels,
+                        datasets: [{
+                            label: '月度积分',
+                            data: data,
+                            borderColor: '#4F46E5',
+                            tension: 0.1,
+                            fill: true,
+                            backgroundColor: 'rgba(79, 70, 229, 0.1)',
+                        }]
+                    },
+                    options: { responsive: true }
+                });
+            };
+
+            const updateStatisticsDetail = () => {
+                const detailContainer = document.getElementById('statistics-detail');
+                detailContainer.innerHTML = '';
+
+                const bestStudent = students.reduce((best, current) => {
+                    const currentScore = getStudentTotalScore(current.id);
+                    const bestScore = getStudentTotalScore(best.id);
+                    return currentScore > bestScore ? current : best;
+                }, students[0] || { id: 0, name: '无' });
+
+                const worstStudent = students.reduce((worst, current) => {
+                    const currentScore = getStudentTotalScore(current.id);
+                    const worstScore = getStudentTotalScore(worst.id);
+                    return currentScore < worstScore ? current : worst;
+                }, students[0] || { id: 0, name: '无' });
+
+                const mostCommonType = scoreTypes.reduce((most, type) => {
+                    const typeCount = scoreRecords.filter(r => r.typeId === type.id).length;
+                    const mostCount = scoreRecords.filter(r => r.typeId === most.id).length;
+                    return typeCount > mostCount ? type : most;
+                }, scoreTypes[0] || { id: 0, name: '无' });
+
+                const stats = [
+                    { label: '积分最高的学生', value: `${bestStudent.name} (${getStudentTotalScore(bestStudent.id)}分)` },
+                    { label: '积分最低的学生', value: `${worstStudent.name} (${getStudentTotalScore(worstStudent.id)}分)` },
+                    { label: '最常见的积分类型', value: mostCommonType.name },
+                    { label: '本月新增积分记录', value: scoreRecords.filter(r => new Date(r.timestamp) >= new Date(new Date().getFullYear(), new Date().getMonth(), 1)).length },
+                ];
+
+                stats.forEach(stat => {
+                    const statElement = document.createElement('div');
+                    statElement.className = 'flex justify-between items-center p-4 bg-gray-100 dark:bg-gray-700 rounded-lg';
+                    statElement.innerHTML = `<span class="font-semibold">${stat.label}:</span> <span>${stat.value}</span>`;
+                    detailContainer.appendChild(statElement);
+                });
+            };
+
+            // --- Settings ---
+            const updateScoreTypesTable = () => {
+                const tbody = document.getElementById('score-types-table-body');
+                tbody.innerHTML = '';
+                scoreTypes.forEach(type => {
+                    const tr = document.createElement('tr');
+                    tr.className = 'border-b dark:border-gray-700';
+                    tr.innerHTML = `
+                        <td class="p-2">${type.name}</td>
+                        <td class="p-2 ${type.value > 0 ? 'text-green-500' : 'text-red-500'}">${type.value > 0 ? '+' : ''}${type.value}</td>
+                        <td class="p-2">
+                            <button class="delete-score-type-btn p-1 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-700" data-id="${type.id}">
+                                <i data-lucide="trash-2"></i>
+                            </button>
+                        </td>
+                    `;
+                    tbody.appendChild(tr);
+                });
+                lucide.createIcons();
+            };
+
+            // --- Event Listeners ---
+            // Navigation
+            document.querySelectorAll('.nav-link').forEach(link => {
+                link.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    const pageId = link.dataset.page + '-page';
+                    document.querySelectorAll('.page').forEach(page => page.classList.add('hidden'));
+                    document.getElementById(pageId).classList.remove('hidden');
+                });
             });
-          }
-        }
-      }
-      
-      gameState.explosions.push(explosion);
-    }
-    
-    // 更新爆炸效果
-    function updateExplosions() {
-      for (let i = gameState.explosions.length - 1; i >= 0; i--) {
-        const explosion = gameState.explosions[i];
-        explosion.frame++;
-        
-        // 更新每个像素
-        explosion.pixels.forEach(pixel => {
-          const life = 1 - (explosion.frame / explosion.maxFrames);
-          pixel.opacity = life;
+
+            // Theme toggle
+            document.getElementById('theme-toggle').addEventListener('click', () => {
+                document.documentElement.classList.toggle('dark');
+                const isDark = document.documentElement.classList.contains('dark');
+                document.querySelector('.sun-icon').classList.toggle('hidden', isDark);
+                document.querySelector('.moon-icon').classList.toggle('hidden', !isDark);
+                updateUI(); // Re-render charts for dark mode
+            });
+
+            // Add Student Modal
+            document.getElementById('add-student-btn').addEventListener('click', () => {
+                document.getElementById('add-student-modal').classList.remove('hidden');
+            });
+
+            document.getElementById('cancel-add-student').addEventListener('click', () => {
+                document.getElementById('add-student-modal').classList.add('hidden');
+                document.getElementById('add-student-form').reset();
+            });
+
+            document.getElementById('add-student-form').addEventListener('submit', (e) => {
+                e.preventDefault();
+                const name = document.getElementById('student-name').value;
+                const id = document.getElementById('student-id').value;
+                if (students.some(s => s.id === id)) {
+                    showToast('学号已存在！');
+                    return;
+                }
+                students.push({ id, name });
+                saveData();
+                document.getElementById('add-student-modal').classList.add('hidden');
+                document.getElementById('add-student-form').reset();
+                showToast('学生添加成功！');
+            });
+
+            // Edit/Delete Student
+            document.getElementById('students-table-body').addEventListener('click', (e) => {
+                const target = e.target.closest('button');
+                if (!target) return;
+
+                const studentId = target.dataset.id;
+                if (target.classList.contains('edit-student-btn')) {
+                    const student = students.find(s => s.id === studentId);
+                    if (student) {
+                        document.getElementById('student-name').value = student.name;
+                        document.getElementById('student-id').value = student.id;
+                        document.getElementById('add-student-modal').classList.remove('hidden');
+                        // Logic to handle edit (e.g., a hidden input to track edit mode)
+                    }
+                } else if (target.classList.contains('delete-student-btn')) {
+                    if (confirm('确定要删除该学生吗？相关的积分记录也将被删除。')) {
+                        students = students.filter(s => s.id !== studentId);
+                        scoreRecords = scoreRecords.filter(r => r.studentId !== studentId);
+                        saveData();
+                        showToast('学生删除成功！');
+                    }
+                }
+            });
+
+            // Add Score Record
+            document.getElementById('add-score-form').addEventListener('submit', (e) => {
+                e.preventDefault();
+                const studentId = document.getElementById('score-student').value;
+                const typeId = parseInt(document.getElementById('score-type').value);
+                const type = scoreTypes.find(t => t.id === typeId);
+                const value = parseInt(document.getElementById('score-value').value);
+                const note = document.getElementById('score-note').value;
+
+                scoreRecords.push({
+                    id: Date.now().toString(),
+                    studentId,
+                    typeId,
+                    value,
+                    note,
+                    timestamp: new Date().toISOString()
+                });
+                saveData();
+                document.getElementById('add-score-form').reset();
+                showToast('积分记录添加成功！');
+            });
+            
+            // Edit Score Record Modal
+            const openEditScoreModal = (recordId) => {
+                const record = scoreRecords.find(r => r.id === recordId);
+                if (!record) return;
+
+                document.getElementById('edit-score-id').value = record.id;
+                document.getElementById('edit-score-student').value = record.studentId;
+                document.getElementById('edit-score-type').value = record.typeId;
+                document.getElementById('edit-score-value').value = record.value;
+                document.getElementById('edit-score-note').value = record.note || '';
+                document.getElementById('edit-score-modal').classList.remove('hidden');
+            };
+
+            document.getElementById('cancel-edit-score').addEventListener('click', () => {
+                document.getElementById('edit-score-modal').classList.add('hidden');
+            });
+
+            document.getElementById('edit-score-form').addEventListener('submit', (e) => {
+                e.preventDefault();
+                const recordId = document.getElementById('edit-score-id').value;
+                const recordIndex = scoreRecords.findIndex(r => r.id === recordId);
+                if (recordIndex === -1) return;
+
+                scoreRecords[recordIndex] = {
+                    ...scoreRecords[recordIndex],
+                    studentId: document.getElementById('edit-score-student').value,
+                    typeId: parseInt(document.getElementById('edit-score-type').value),
+                    value: parseInt(document.getElementById('edit-score-value').value),
+                    note: document.getElementById('edit-score-note').value,
+                };
+                saveData();
+                document.getElementById('edit-score-modal').classList.add('hidden');
+                showToast('积分记录更新成功！');
+            });
+
+
+            // Edit/Delete Score Record
+            document.getElementById('scores-table-body').addEventListener('click', (e) => {
+                const target = e.target.closest('button');
+                if (!target) return;
+
+                const recordId = target.dataset.id;
+                if (target.classList.contains('edit-score-btn')) {
+                    openEditScoreModal(recordId);
+                } else if (target.classList.contains('delete-score-btn')) {
+                    if (confirm('确定要删除这条积分记录吗？')) {
+                        scoreRecords = scoreRecords.filter(r => r.id !== recordId);
+                        saveData();
+                        showToast('积分记录删除成功！');
+                    }
+                }
+            });
+
+            // Add Score Type
+            document.getElementById('add-score-type-btn').addEventListener('click', () => {
+                const name = document.getElementById('new-score-type-name').value;
+                const value = parseInt(document.getElementById('new-score-type-value').value);
+                if (!name || value === null) {
+                    showToast('请输入完整信息！');
+                    return;
+                }
+                scoreTypes.push({
+                    id: Date.now(),
+                    name,
+                    value
+                });
+                saveData();
+                document.getElementById('new-score-type-name').value = '';
+                document.getElementById('new-score-type-value').value = '';
+                showToast('积分类型添加成功！');
+            });
+
+            // Delete Score Type
+            document.getElementById('score-types-table-body').addEventListener('click', (e) => {
+                const target = e.target.closest('.delete-score-type-btn');
+                if (target) {
+                    const typeId = parseInt(target.dataset.id);
+                    if (confirm('确定要删除该积分类型吗？')) {
+                        scoreTypes = scoreTypes.filter(t => t.id !== typeId);
+                        saveData();
+                        showToast('积分类型删除成功！');
+                    }
+                }
+            });
+
+            // Search and Sort
+            document.getElementById('student-search').addEventListener('input', () => {
+                const searchTerm = document.getElementById('student-search').value.toLowerCase();
+                const filteredStudents = students.filter(s => s.name.toLowerCase().includes(searchTerm));
+                // Re-render the table with filtered students
+                const tbody = document.getElementById('students-table-body');
+                tbody.innerHTML = '';
+                filteredStudents.forEach(student => {
+                    const tr = document.createElement('tr');
+                    tr.className = 'border-b dark:border-gray-700';
+                    tr.innerHTML = `
+                        <td class="p-2">${student.id}</td>
+                        <td class="p-2">${student.name}</td>
+                        <td class="p-2">${getStudentTotalScore(student.id)}</td>
+                        <td class="p-2">
+                            <button class="edit-student-btn p-1 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-700" data-id="${student.id}">
+                                <i data-lucide="edit"></i>
+                            </button>
+                            <button class="delete-student-btn p-1 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-700" data-id="${student.id}">
+                                <i data-lucide="trash-2"></i>
+                            </button>
+                        </td>
+                    `;
+                    tbody.appendChild(tr);
+                });
+                lucide.createIcons();
+            });
+
+            document.getElementById('student-sort').addEventListener('change', () => {
+                const sortBy = document.getElementById('student-sort').value;
+                switch (sortBy) {
+                    case 'name-asc':
+                        students.sort((a, b) => a.name.localeCompare(b.name));
+                        break;
+                    case 'name-desc':
+                        students.sort((a, b) => b.name.localeCompare(a.name));
+                        break;
+                    case 'score-asc':
+                        students.sort((a, b) => getStudentTotalScore(a.id) - getStudentTotalScore(b.id));
+                        break;
+                    case 'score-desc':
+                        students.sort((a, b) => getStudentTotalScore(b.id) - getStudentTotalScore(a.id));
+                        break;
+                }
+                updateStudentsTable();
+            });
+            
+            // Score Record Search and Filter
+            document.getElementById('score-search').addEventListener('input', () => {
+                filterAndSearchScores();
+            });
+
+            document.getElementById('score-filter').addEventListener('change', () => {
+                filterAndSearchScores();
+            });
+
+            const filterAndSearchScores = () => {
+                const searchTerm = document.getElementById('score-search').value.toLowerCase();
+                const filterType = document.getElementById('score-filter').value;
+
+                let filteredRecords = [...scoreRecords];
+
+                if (filterType !== 'all') {
+                    filteredRecords = filteredRecords.filter(r => r.typeId.toString() === filterType);
+                }
+
+                if (searchTerm) {
+                    filteredRecords = filteredRecords.filter(r => {
+                        const student = students.find(s => s.id === r.studentId);
+                        const type = scoreTypes.find(t => t.id === r.typeId);
+                        return (student && student.name.toLowerCase().includes(searchTerm)) ||
+                               (type && type.name.toLowerCase().includes(searchTerm)) ||
+                               (r.note && r.note.toLowerCase().includes(searchTerm));
+                    });
+                }
+
+                const tbody = document.getElementById('scores-table-body');
+                tbody.innerHTML = '';
+                filteredRecords.slice().reverse().forEach(record => {
+                    const student = students.find(s => s.id === record.studentId);
+                    const type = scoreTypes.find(t => t.id === record.typeId);
+                    if (!student || !type) return;
+
+                    const tr = document.createElement('tr');
+                    tr.className = 'border-b dark:border-gray-700';
+                    tr.innerHTML = `
+                        <td class="p-2">${student.name}</td>
+                        <td class="p-2">${type.name}</td>
+                        <td class="p-2 ${record.value > 0 ? 'text-green-500' : 'text-red-500'}">${record.value > 0 ? '+' : ''}${record.value}</td>
+                        <td class="p-2">${new Date(record.timestamp).toLocaleString()}</td>
+                        <td class="p-2">${record.note || '-'}</td>
+                        <td class="p-2">
+                            <button class="edit-score-btn p-1 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-700" data-id="${record.id}">
+                                <i data-lucide="edit"></i>
+                            </button>
+                            <button class="delete-score-btn p-1 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-700" data-id="${record.id}">
+                                <i data-lucide="trash-2"></i>
+                            </button>
+                        </td>
+                    `;
+                    tbody.appendChild(tr);
+                });
+                lucide.createIcons();
+            };
+
+
+            // Data Import/Export
+            document.getElementById('export-data-btn').addEventListener('click', () => {
+                const data = { students, scoreRecords, scoreTypes };
+                const dataStr = JSON.stringify(data);
+                const dataUri = 'data:application/json;charset=utf-8,'+ encodeURIComponent(dataStr);
+                const exportFileDefaultName = `class-score-data-${new Date().toISOString().split('T')[0]}.json`;
+                const linkElement = document.createElement('a');
+                linkElement.setAttribute('href', dataUri);
+                linkElement.setAttribute('download', exportFileDefaultName);
+                linkElement.click();
+                showToast('数据导出成功！');
+            });
+
+            document.getElementById('import-data-btn').addEventListener('click', () => {
+                document.getElementById('import-data-input').click();
+            });
+
+            document.getElementById('import-data-input').addEventListener('change', (e) => {
+                const file = e.target.files[0];
+                if (!file) return;
+                const reader = new FileReader();
+                reader.onload = (event) => {
+                    try {
+                        const data = JSON.parse(event.target.result);
+                        if (data.students && data.scoreRecords && data.scoreTypes) {
+                            if (confirm('导入数据将覆盖现有数据，确定继续吗？')) {
+                                students = data.students;
+                                scoreRecords = data.scoreRecords;
+                                scoreTypes = data.scoreTypes;
+                                saveData();
+                                showToast('数据导入成功！');
+                            }
+                        } else {
+                            showToast('无效的数据文件！');
+                        }
+                    } catch (err) {
+                        showToast('文件解析失败！');
+                    }
+                };
+                reader.readAsText(file);
+                e.target.value = ''; // Reset input to allow re-importing the same file
+            });
+
+            document.getElementById('clear-data-btn').addEventListener('click', () => {
+                if (confirm('确定要清空所有数据吗？此操作不可恢复！')) {
+                    students = [];
+                    scoreRecords = [];
+                    scoreTypes = [
+                        { id: 1, name: '课堂表现', value: 2 },
+                        { id: 2, name: '作业完成', value: 1 },
+                        { id: 3, name: '纪律遵守', value: 1 },
+                        { id: 4, name: '迟到', value: -1 },
+                        { id: 5, name: '作业未完成', value: -2 },
+                    ];
+                    saveData();
+                    showToast('数据已清空！');
+                }
+            });
+
+            // Initial UI Update
+            updateUI();
+            // Set active page
+            document.querySelector('[data-page="dashboard"]').click();
         });
-        
-        // 移除完成的爆炸
-        if (explosion.frame >= explosion.maxFrames) {
-          gameState.explosions.splice(i, 1);
-        }
-      }
-    }
-    
-    // 显示漂浮文字
-    function showFloatingText(gridX, gridY, text, colorClass = 'text-accent', scale = 1) {
-      // 转换为像素坐标
-      const x = (gridX + 0.5) * config.gridSize;
-      const y = (gridY + 0.5) * config.gridSize;
-      
-      const floatingText = {
-        x,
-        y,
-        text,
-        colorClass,
-        scale,
-        frame: 0,
-        maxFrames: 30,
-        opacity: 1
-      };
-      
-      gameState.floatingTexts.push(floatingText);
-    }
-    
-    // 更新漂浮文字
-    function updateFloatingTexts() {
-      for (let i = gameState.floatingTexts.length - 1; i >= 0; i--) {
-        const text = gameState.floatingTexts[i];
-        text.frame++;
-        text.y -= 1; // 向上移动
-        text.opacity = 1 - (text.frame / text.maxFrames);
-        
-        if (text.frame >= text.maxFrames) {
-          gameState.floatingTexts.splice(i, 1);
-        }
-      }
-    }
-    
-    // 更新分数显示
-    function updateScore() {
-      elements.scoreElement.textContent = gameState.score;
-      
-      // 检查是否打破最高分
-      if (gameState.score > gameState.highScore) {
-        gameState.highScore = gameState.score;
-        elements.highScoreElement.textContent = gameState.highScore;
-        saveGameData();
-      }
-    }
-    
-    // 结束游戏
-    function endGame() {
-      gameState.isGameOver = true;
-      
-      // 清除所有计时器
-      Object.values(gameState.effectTimers).forEach(timer => clearTimeout(timer));
-      
-      // 更新游戏结束界面
-      elements.finalScoreElement.textContent = gameState.score;
-      elements.gameOverHighScoreElement.textContent = gameState.highScore;
-      
-      // 检查是否解锁新皮肤
-      const unlockedSkin = checkSkinUnlocks();
-      if (unlockedSkin) {
-        elements.levelUpMessage.classList.remove('hidden');
-      }
-      
-      // 检查是否解锁新成就
-      const newAchievements = checkAchievements({ score: gameState.score });
-      if (newAchievements.length > 0) {
-        elements.achievementUnlocked.classList.remove('hidden');
-        elements.achievementName.textContent = newAchievements[0].name;
-      }
-      
-      // 显示游戏结束界面
-      elements.gameOverScreen.classList.remove('hidden');
-    }
-    
-    // 分享成绩
-    function shareScore() {
-      const score = gameState.score;
-      const message = `我在像素贪吃蛇中获得了${score}分！快来挑战我吧！`;
-      
-      // 检查是否支持Web Share API
-      if (navigator.share) {
-        navigator.share({
-          title: '像素贪吃蛇',
-          text: message,
-          url: window.location.href
-        }).catch(err => {
-          console.log('分享失败:', err);
-          copyToClipboard(message);
-        });
-      } else {
-        // 不支持则复制到剪贴板
-        copyToClipboard(message);
-      }
-    }
-    
-    // 复制到剪贴板
-    function copyToClipboard(text) {
-      navigator.clipboard.writeText(text).then(() => {
-        alert('成绩已复制到剪贴板，可以分享给好友了！');
-      }).catch(err => {
-        console.error('无法复制文本: ', err);
-      });
-    }
-    
-    // 绘制游戏
-    function drawGame() {
-      const ctx = gameState.ctx;
-      const gridSize = config.gridSize;
-      
-      // 清除画布
-      ctx.clearRect(0, 0, gameState.canvas.width, gameState.canvas.height);
-      
-      // 绘制网格背景
-      drawGridBackground(ctx, gridSize);
-      
-      // 绘制蛇
-      drawSnake(ctx, gridSize);
-      
-      // 绘制食物
-      drawFood(ctx, gridSize);
-      
-      // 绘制爆炸效果
-      drawExplosions(ctx, gridSize);
-      
-      // 绘制漂浮文字
-      drawFloatingTexts(ctx);
-      
-      // 如果游戏暂停，绘制暂停提示
-      if (gameState.isPaused) {
-        drawPauseScreen(ctx);
-      }
-    }
-    
-    // 绘制网格背景
-    function drawGridBackground(ctx, gridSize) {
-      ctx.strokeStyle = 'rgba(255, 255, 255, 0.05)';
-      ctx.lineWidth = 1;
-      
-      // 绘制水平线
-      for (let y = 0; y <= gameState.gridHeight; y++) {
-        ctx.beginPath();
-        ctx.moveTo(0, y * gridSize);
-        ctx.lineTo(gameState.canvasWidth, y * gridSize);
-        ctx.stroke();
-      }
-      
-      // 绘制垂直线
-      for (let x = 0; x <= gameState.gridWidth; x++) {
-        ctx.beginPath();
-        ctx.moveTo(x * gridSize, 0);
-        ctx.lineTo(x * gridSize, gameState.canvasHeight);
-        ctx.stroke();
-      }
-    }
-    
-    // 绘制蛇
-    function drawSnake(ctx, gridSize) {
-      const skin = gameState.skins[gameState.currentSkin];
-      const snakeLength = gameState.snake.length;
-      
-      gameState.snake.forEach((segment, index) => {
-        // 确定颜色
-        let color;
-        if (gameState.activeEffects.rainbow) {
-          // 彩虹效果下使用彩虹色
-          const colorIndex = Math.floor((index / snakeLength) * 6) % 6;
-          color = ['#FF3E3E', '#FF6F00', '#D5FF3B', '#46ED4D', '#3FAAFF', '#AC53FF'][colorIndex];
-        } else {
-          // 使用皮肤颜色
-          const colorIndex = index % skin.colors.length;
-          color = skin.colors[colorIndex];
-        }
-        
-        // 绘制蛇段
-        ctx.fillStyle = color;
-        ctx.fillRect(segment.x * gridSize, segment.y * gridSize, gridSize, gridSize);
-        
-        // 皮肤特效
-        if (skin.effect === 'glow' && index === 0) {
-          // 黄金蛇发光效果
-          ctx.shadowColor = '#FFD700';
-          ctx.shadowBlur = 10;
-          ctx.strokeStyle = 'rgba(255, 255, 255, 0.8)';
-          ctx.lineWidth = 2;
-          ctx.strokeRect(segment.x * gridSize, segment.y * gridSize, gridSize, gridSize);
-          ctx.shadowBlur = 0; // 重置阴影
-        } else if (skin.effect === 'pixel' && index > 0) {
-          // 像素蛇的像素效果
-          ctx.fillStyle = 'rgba(0, 0, 0, 0.2)';
-          const pixelSize = gridSize / 3;
-          for (let y = 0; y < 3; y++) {
-            for (let x = 0; x < 3; x++) {
-              if (Math.random() > 0.7) { // 随机像素点
-                ctx.fillRect(
-                  segment.x * gridSize + x * pixelSize,
-                  segment.y * gridSize + y * pixelSize,
-                  pixelSize,
-                  pixelSize
-                );
-              }
-            }
-          }
-        } else if (index === 0) {
-          // 普通蛇头高亮
-          ctx.strokeStyle = 'rgba(255, 255, 255, 0.7)';
-          ctx.lineWidth = 2;
-          ctx.strokeRect(segment.x * gridSize, segment.y * gridSize, gridSize, gridSize);
-        }
-        
-        // 移动轨迹效果（仅非头部）
-        if (index > 0 && index < 5) {
-          ctx.fillStyle = `${color}40`; // 半透明
-          ctx.fillRect(segment.x * gridSize, segment.y * gridSize, gridSize, gridSize);
-        }
-      });
-    }
-    
-    // 绘制食物
-    function drawFood(ctx, gridSize) {
-      const food = gameState.food;
-      const x = food.x * gridSize;
-      const y = food.y * gridSize;
-      
-      // 根据食物类型绘制不同样式
-      switch (gameState.foodType) {
-        case 'normal':
-          // 普通食物
-          ctx.fillStyle = '#4caf50';
-          ctx.fillRect(x, y, gridSize, gridSize);
-          // 添加细节
-          ctx.fillStyle = '#388e3c';
-          ctx.fillRect(x + gridSize/4, y + gridSize/4, gridSize/2, gridSize/2);
-          break;
-          
-        case 'double':
-          // 双倍分食物
-          ctx.fillStyle = '#FFD700';
-          ctx.fillRect(x, y, gridSize, gridSize);
-          // 星星标志
-          ctx.fillStyle = '#FFA000';
-          drawStar(ctx, x + gridSize/2, y + gridSize/2, 5, gridSize/3, gridSize/6);
-          // 旋转动画效果
-          const rotation = (Date.now() / 1000) % Math.PI * 2;
-          ctx.save();
-          ctx.translate(x + gridSize/2, y + gridSize/2);
-          ctx.rotate(rotation);
-          ctx.fillStyle = 'rgba(255, 255, 255, 0.3)';
-          ctx.fillRect(-gridSize/6, -gridSize/6, gridSize/3, gridSize/3);
-          ctx.restore();
-          break;
-          
-        case 'slow':
-          // 减速食物
-          ctx.fillStyle = '#1E90FF';
-          ctx.fillRect(x, y, gridSize, gridSize);
-          // 蜗牛标志
-          ctx.fillStyle = '#87CEFA';
-          ctx.beginPath();
-          ctx.arc(x + gridSize/2, y + gridSize/2, gridSize/4, 0, Math.PI * 2);
-          ctx.fill();
-          ctx.fillStyle = '#1E90FF';
-          ctx.beginPath();
-          ctx.arc(x + gridSize/2 + gridSize/6, y + gridSize/2, gridSize/6, 0, Math.PI * 2);
-          ctx.fill();
-          break;
-          
-        case 'split':
-          // 分身食物
-          ctx.fillStyle = '#9370DB';
-          ctx.fillRect(x, y, gridSize, gridSize);
-          // 分裂标志
-          ctx.fillStyle = '#BA68C8';
-          ctx.fillRect(x + gridSize/4, y + gridSize/4, gridSize/6, gridSize/6);
-          ctx.fillRect(x + gridSize*2/3, y + gridSize/4, gridSize/6, gridSize/6);
-          ctx.fillRect(x + gridSize/4, y + gridSize*2/3, gridSize/6, gridSize/6);
-          ctx.fillRect(x + gridSize*2/3, y + gridSize*2/3, gridSize/6, gridSize/6);
-          break;
-          
-        case 'rainbow':
-          // 彩虹食物
-          const gradient = ctx.createLinearGradient(x, y, x + gridSize, y + gridSize);
-          gradient.addColorStop(0, '#FF3E3E');
-          gradient.addColorStop(0.2, '#FF6F00');
-          gradient.addColorStop(0.4, '#D5FF3B');
-          gradient.addColorStop(0.6, '#46ED4D');
-          gradient.addColorStop(0.8, '#3FAAFF');
-          gradient.addColorStop(1, '#AC53FF');
-          
-          ctx.fillStyle = gradient;
-          ctx.fillRect(x, y, gridSize, gridSize);
-          
-          // 闪烁效果
-          const time = Date.now() % 1000;
-          if (time < 500) {
-            ctx.fillStyle = 'rgba(255, 255, 255, 0.3)';
-            ctx.fillRect(x + gridSize/4, y + gridSize/4, gridSize/2, gridSize/2);
-          }
-          break;
-      }
-    }
-    
-    // 绘制星星
-    function drawStar(ctx, cx, cy, spikes, outerRadius, innerRadius) {
-      let rot = Math.PI / 2 * 3;
-      let x = cx;
-      let y = cy;
-      let step = Math.PI / spikes;
-      
-      ctx.beginPath();
-      ctx.moveTo(cx, cy - outerRadius);
-      
-      for (let i = 0; i < spikes; i++) {
-        x = cx + Math.cos(rot) * outerRadius;
-        y = cy + Math.sin(rot) * outerRadius;
-        ctx.lineTo(x, y);
-        rot += step;
-        
-        x = cx + Math.cos(rot) * innerRadius;
-        y = cy + Math.sin(rot) * innerRadius;
-        ctx.lineTo(x, y);
-        rot += step;
-      }
-      
-      ctx.lineTo(cx, cy - outerRadius);
-      ctx.closePath();
-      ctx.fill();
-    }
-    
-    // 绘制爆炸效果
-    function drawExplosions(ctx, gridSize) {
-      gameState.explosions.forEach(explosion => {
-        const centerX = (explosion.x + 0.5) * gridSize;
-        const centerY = (explosion.y + 0.5) * gridSize;
-        const spreadFactor = 1 + (explosion.frame / explosion.maxFrames) * 2;
-        
-        explosion.pixels.forEach(pixel => {
-          if (pixel.opacity <= 0) return;
-          
-          ctx.save();
-          ctx.globalAlpha = pixel.opacity;
-          
-          // 根据爆炸类型设置颜色
-          if (explosion.type === 'gold') {
-            ctx.fillStyle = pixel.opacity > 0.5 ? '#FFD700' : '#FFA000';
-          } else if (explosion.type === 'blue') {
-            ctx.fillStyle = pixel.opacity > 0.5 ? '#1E90FF' : '#87CEFA';
-          } else if (explosion.type === 'purple') {
-            ctx.fillStyle = pixel.opacity > 0.5 ? '#9370DB' : '#BA68C8';
-          } else if (explosion.type === 'rainbow') {
-            const hue = (Date.now() / 50) % 360;
-            ctx.fillStyle = `hsl(${hue}, 100%, 50%)`;
-          } else {
-            ctx.fillStyle = pixel.opacity > 0.5 ? '#FFFFFF' : '#AAAAAA';
-          }
-          
-          // 绘制爆炸像素
-          const pixelSize = explosion.pixelSize * pixel.size;
-          const pixelX = centerX + pixel.dx * pixelSize * spreadFactor;
-          const pixelY = centerY + pixel.dy * pixelSize * spreadFactor;
-          
-          ctx.fillRect(
-            pixelX - pixelSize / 2,
-            pixelY - pixelSize / 2,
-            pixelSize,
-            pixelSize
-          );
-          
-          ctx.restore();
-        });
-      });
-    }
-    
-    // 绘制漂浮文字
-    function drawFloatingTexts(ctx) {
-      gameState.floatingTexts.forEach(text => {
-        ctx.save();
-        ctx.globalAlpha = text.opacity;
-        ctx.font = `${16 * text.scale}px Doto, monospace`;
-        ctx.textAlign = 'center';
-        ctx.textBaseline = 'middle';
-        
-        // 设置颜色
-        if (text.colorClass === 'text-yellow-400') {
-          ctx.fillStyle = '#FFD700';
-          ctx.shadowColor = '#FFD700';
-          ctx.shadowBlur = 5;
-        } else if (text.colorClass === 'text-blue-400') {
-          ctx.fillStyle = '#1E90FF';
-        } else if (text.colorClass === 'text-purple-400') {
-          ctx.fillStyle = '#9370DB';
-        } else if (text.colorClass === 'text-red-400') {
-          ctx.fillStyle = '#FF3E3E';
-        } else {
-          ctx.fillStyle = '#0EFF37';
-        }
-        
-        // 绘制文字
-        ctx.fillText(text.text, text.x, text.y);
-        
-        // 重置阴影
-        ctx.shadowBlur = 0;
-        ctx.restore();
-      });
-    }
-    
-    // 绘制暂停屏幕
-    function drawPauseScreen(ctx) {
-      ctx.fillStyle = 'rgba(0, 0, 0, 0.7)';
-      ctx.fillRect(0, 0, gameState.canvas.width, gameState.canvas.height);
-      
-      ctx.font = '40px Doto, monospace';
-      ctx.fillStyle = '#ffeb3b';
-      ctx.textAlign = 'center';
-      ctx.textBaseline = 'middle';
-      ctx.fillText('暂停', gameState.canvas.width / 2, gameState.canvas.height / 2);
-      
-      ctx.font = '20px Doto, monospace';
-      ctx.fillStyle = '#ffffff';
-      ctx.fillText('按空格键继续', gameState.canvas.width / 2, gameState.canvas.height / 2 + 50);
-    }
-    
-    // 初始化游戏
-    window.addEventListener('load', initGame);
-  </script>
+    </script>
 </body>
 </html>
